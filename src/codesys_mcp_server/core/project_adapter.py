@@ -379,6 +379,20 @@ class CodesysProjectAdapter:
             }
         )
 
+    def list_objects(
+        self,
+        project_path: str,
+        container_path: str = "/",
+    ) -> dict[str, Any]:
+        """List child objects below the given logical container."""
+        return self._runner.run_operation(
+            {
+                "operation": "list_objects",
+                "project_path": project_path,
+                "container_path": container_path,
+            }
+        )
+
     def copy_project_for_testing(
         self,
         source_project_path: str,

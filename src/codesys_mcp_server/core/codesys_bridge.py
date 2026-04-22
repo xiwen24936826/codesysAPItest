@@ -63,6 +63,8 @@ def _find_child(parent, name):
 
 def _resolve_container(project, container_path):
     container = project
+    if container_path in (None, "", "/"):
+        return container
     for part in [item for item in container_path.split("/") if item]:
         container = _find_child(container, part)
     return container
@@ -108,6 +110,18 @@ def _get_text_document(target_object, document_kind):
         return target_object.textual_implementation
 
     raise LookupError("Unsupported document kind: %s" % document_kind)
+
+
+def _describe_children(parent):
+    children = []
+    for child in parent.get_children(False):
+        children.append(
+            {
+                "name": _get_object_name(child),
+                "is_folder": bool(getattr(child, "is_folder", False)),
+            }
+        )
+    return children
 
 
 def _handle_create(request):
@@ -326,7 +340,7 @@ def _handle_insert_text_document(request):
     )
     document = _get_text_document(target_object, request["document_kind"])
     document.insert(
-        request["text_to_insert"],
+        text=request["text_to_insert"],
         offset=request["insertion_offset"],
     )
     project.save()
@@ -336,6 +350,19 @@ def _handle_insert_text_document(request):
         "document_kind": request["document_kind"],
         "updated": True,
         "insertion_offset": request["insertion_offset"],
+    }
+    project.close()
+    return result
+
+
+def _handle_list_objects(request):
+    project = _open_project(request)
+    container_path = request.get("container_path", "/")
+    container = _resolve_container(project, container_path)
+    result = {
+        "project_path": project.path,
+        "container_path": container_path,
+        "children": _describe_children(container),
     }
     project.close()
     return result
@@ -358,6 +385,7 @@ def main():
         "replace_text_document": _handle_replace_text_document,
         "append_text_document": _handle_append_text_document,
         "insert_text_document": _handle_insert_text_document,
+        "list_objects": _handle_list_objects,
     }
 
     if operation not in handlers:

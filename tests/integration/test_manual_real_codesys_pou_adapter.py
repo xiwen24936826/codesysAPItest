@@ -52,13 +52,32 @@ class ManualRealCodesysPouAdapterTests(unittest.TestCase):
         self._project_path = str(self._project_copy_path)
 
     def tearDown(self) -> None:
-        try:
-            self._project_copy_path.unlink(missing_ok=True)
-        except OSError:
-            pass
+        for path in (
+            self._project_copy_path,
+            self._project_copy_path.with_suffix(".project.precompilecache"),
+            self._project_copy_path.with_suffix(".precompilecache"),
+        ):
+            try:
+                path.unlink(missing_ok=True)
+            except OSError:
+                pass
+
+    def _resolve_test_container_path(self) -> str:
+        root_listing = self._adapter.list_objects(
+            project_path=self._project_path,
+            container_path="/",
+        )
+        child_names = {child["name"] for child in root_listing["children"]}
+        print("ROOT_CHILDREN:", sorted(child_names))
+        if "Application" in child_names:
+            print("SELECTED_CONTAINER: Application")
+            return "Application"
+        print("SELECTED_CONTAINER: /")
+        return "/"
 
     def test_manual_project_supports_pou_create_and_text_updates(self) -> None:
         program_name = "AutoProgram_%s" % uuid4().hex[:8]
+        container_path = self._resolve_test_container_path()
 
         open_response = open_project(
             request={"project_path": self._project_path},
@@ -70,7 +89,7 @@ class ManualRealCodesysPouAdapterTests(unittest.TestCase):
         create_response = create_program(
             request={
                 "project_path": self._project_path,
-                "container_path": "Application",
+                "container_path": container_path,
                 "name": program_name,
                 "language": "ST",
             },
@@ -82,7 +101,7 @@ class ManualRealCodesysPouAdapterTests(unittest.TestCase):
         replace_response = replace_text_document(
             request={
                 "project_path": self._project_path,
-                "container_path": "Application",
+                "container_path": container_path,
                 "object_name": program_name,
                 "document_kind": "implementation",
                 "new_text": "Counter := 1;",
@@ -95,7 +114,7 @@ class ManualRealCodesysPouAdapterTests(unittest.TestCase):
         append_response = append_text_document(
             request={
                 "project_path": self._project_path,
-                "container_path": "Application",
+                "container_path": container_path,
                 "object_name": program_name,
                 "document_kind": "implementation",
                 "text_to_append": "\nCounter := Counter + 1;",
@@ -108,7 +127,7 @@ class ManualRealCodesysPouAdapterTests(unittest.TestCase):
         insert_response = insert_text_document(
             request={
                 "project_path": self._project_path,
-                "container_path": "Application",
+                "container_path": container_path,
                 "object_name": program_name,
                 "document_kind": "implementation",
                 "text_to_insert": "// inserted by Codex\n",
@@ -122,7 +141,7 @@ class ManualRealCodesysPouAdapterTests(unittest.TestCase):
         read_response = read_textual_implementation(
             request={
                 "project_path": self._project_path,
-                "container_path": "Application",
+                "container_path": container_path,
                 "object_name": program_name,
             },
             text_document_reader=self._adapter,
