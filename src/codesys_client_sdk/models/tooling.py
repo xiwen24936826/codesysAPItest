@@ -1,6 +1,8 @@
 """Client-side request and response models."""
 
-from .tooling import ToolCall, ToolDefinition, ToolResult
+from __future__ import annotations
+
+from codesys_mcp_server.models.tooling import ToolCall, ToolDefinition, ToolResult
 
 __all__ = [
     "ToolCall",

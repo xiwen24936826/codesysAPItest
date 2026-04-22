@@ -86,7 +86,6 @@
 
 - `VALIDATION_ERROR`
 - `PROJECT_NOT_FOUND`
-- `PROJECT_IN_USE`
 - `PROJECT_NOT_OPEN`
 - `SAVE_FAILED`
 - `DEVICE_TYPE_NOT_FOUND`
@@ -359,7 +358,6 @@
 
 - 允许基于用户手工准备好的真实 SP20 项目恢复联调
 - 用户提供真实项目的绝对路径
-- 集成测试优先复制该项目到临时副本后再执行，避免与手工打开的源项目发生占用冲突
 - 优先验证：
   - `open_project`
   - `create_program`

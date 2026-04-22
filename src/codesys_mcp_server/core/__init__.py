@@ -3,7 +3,6 @@
 from .project_adapter import (
     CodesysIdeConfig,
     CodesysIdeRunner,
-    CodesysProjectInUseError,
     CodesysProjectAdapter,
     CodesysScriptExecutionError,
 )
@@ -11,7 +10,6 @@ from .project_adapter import (
 __all__ = [
     "CodesysIdeConfig",
     "CodesysIdeRunner",
-    "CodesysProjectInUseError",
     "CodesysProjectAdapter",
     "CodesysScriptExecutionError",
 ]

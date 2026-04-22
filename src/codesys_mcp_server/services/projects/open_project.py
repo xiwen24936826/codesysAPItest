@@ -10,8 +10,6 @@ import time
 from typing import Any, Protocol
 from uuid import uuid4
 
-from codesys_mcp_server.core import CodesysProjectInUseError
-
 
 LOGGER = logging.getLogger(__name__)
 TOOL_NAME = "open_project"
@@ -113,24 +111,6 @@ def open_project(
             request_id=resolved_request_id,
             started_at=started_at,
         )
-    except CodesysProjectInUseError:
-        LOGGER.warning(
-            "open_project target is currently in use",
-            extra={
-                "tool": TOOL_NAME,
-                "request_id": resolved_request_id,
-                "project_path": request.get("project_path"),
-                "status": "failed",
-                "error_code": "PROJECT_IN_USE",
-            },
-        )
-        return _error_response(
-            code="PROJECT_IN_USE",
-            message="Project file is currently in use by another IDE session.",
-            details={"project_path": request.get("project_path")},
-            request_id=resolved_request_id,
-            started_at=started_at,
-        )
     except Exception as exc:  # pragma: no cover - safety net for unexpected adapter failures
         LOGGER.exception(
             "open_project failed with unexpected error",
@@ -209,3 +189,4 @@ def _build_meta(request_id: str, started_at: float) -> dict[str, Any]:
         "request_id": request_id,
         "duration_ms": round((time.perf_counter() - started_at) * 1000),
     }
+

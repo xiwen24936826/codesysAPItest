@@ -6,3 +6,6 @@
 - `api_specs/`: MCP 工具与内部服务接口规范
 - `research/`: CODESYS API 调研、能力映射、供应商差异记录
 - `codex_client_handbook.md`: 面向 Codex 客户端的轻量协作手册
+- `git_workflow.md`: Git 与 GitHub Desktop 工作说明
+- `current_phase_plan.md`: 当前阶段计划与稳定边界
+- `architecture/server_assembly.md`: 本地 server/tool/client 装配说明
