@@ -1,0 +1,37 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyd
+*.so
+.Python
+.venv/
+venv/
+env/
+
+# Tooling
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+coverage.xml
+htmlcov/
+
+# IDE
+.idea/
+.vscode/
+
+# OS
+Thumbs.db
+Desktop.ini
+
+# Build
+build/
+dist/
+*.egg-info/
+
+# Local config
+.env
+.env.*
+
+# Local runtime artifacts
+codesys_real_*/

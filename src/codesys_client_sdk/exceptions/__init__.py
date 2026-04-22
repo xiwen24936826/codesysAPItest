@@ -1,0 +1,2 @@
+"""Client SDK exception types."""
+
