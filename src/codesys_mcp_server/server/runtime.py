@@ -14,6 +14,8 @@ from .factory import (
     create_real_ide_server_application,
 )
 
+MCP_PROTOCOL_VERSION = "2025-06-18"
+
 
 class ServerRuntime:
     """Thin runtime wrapper around the local server application."""
@@ -37,7 +39,7 @@ class ServerRuntime:
             {
                 "name": tool.name,
                 "description": tool.description,
-                "input_schema": tool.input_schema,
+                "inputSchema": tool.input_schema,
             }
             for tool in self._app.list_tools()
         ]
@@ -67,12 +69,16 @@ class ServerRuntime:
             return None
 
         if method == "initialize":
+            client_version = None
+            if isinstance(params, dict):
+                client_version = params.get("protocolVersion")
             return self._protocol_result(
                 request_id=request_id,
                 result={
-                    "protocolVersion": "2026-04-22-draft",
+                    "protocolVersion": self._negotiate_protocol_version(client_version),
                     "serverInfo": {
                         "name": "codesys-mcp-local",
+                        "title": "CODESYS MCP Local Server",
                         "version": "0.1.0",
                     },
                     "capabilities": {
@@ -105,13 +111,21 @@ class ServerRuntime:
                     code=-32602,
                     message="Invalid params for tools/call: name is required.",
                 )
-            return self._protocol_result(
-                request_id=request_id,
-                result=self.call_tool(
+            try:
+                tool_payload = self.call_tool(
                     name=params["name"],
                     arguments=params.get("arguments", {}),
                     request_id=params.get("request_id"),
-                ),
+                )
+            except KeyError:
+                return self._protocol_error(
+                    request_id=request_id,
+                    code=-32602,
+                    message="Unknown tool: %s" % params["name"],
+                )
+            return self._protocol_result(
+                request_id=request_id,
+                result=self._as_mcp_tool_result(tool_payload),
             )
 
         if method == "shutdown":
@@ -181,6 +195,47 @@ class ServerRuntime:
                 "code": code,
                 "message": message,
             },
+        }
+
+    @staticmethod
+    def _negotiate_protocol_version(client_version: Any) -> str:
+        if client_version == MCP_PROTOCOL_VERSION:
+            return MCP_PROTOCOL_VERSION
+        return MCP_PROTOCOL_VERSION
+
+    @staticmethod
+    def _as_mcp_tool_result(payload: dict[str, Any]) -> dict[str, Any]:
+        is_error = not bool(payload.get("ok"))
+        content: list[dict[str, str]] = []
+
+        if is_error:
+            error = payload.get("error")
+            if isinstance(error, dict):
+                content.append(
+                    {
+                        "type": "text",
+                        "text": error.get("message", "Tool execution failed."),
+                    }
+                )
+            else:
+                content.append(
+                    {
+                        "type": "text",
+                        "text": "Tool execution failed.",
+                    }
+                )
+        else:
+            content.append(
+                {
+                    "type": "text",
+                    "text": json.dumps(payload, ensure_ascii=False),
+                }
+            )
+
+        return {
+            "content": content,
+            "structuredContent": payload,
+            "isError": is_error,
         }
 
 
