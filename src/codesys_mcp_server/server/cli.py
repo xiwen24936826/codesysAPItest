@@ -41,13 +41,18 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--backend",
         default="in_memory",
-        choices=["in_memory"],
+        choices=["in_memory", "real_ide"],
         help="Backend mode used by the local runtime.",
     )
     parser.add_argument(
         "--log-level",
         default="INFO",
         help="Console log level.",
+    )
+    parser.add_argument(
+        "--bridge-script-path",
+        default=None,
+        help="Optional override path for the embedded CODESYS bridge script.",
     )
     parser.add_argument(
         "--log-json",
@@ -65,6 +70,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     runtime = create_runtime(
         ServerSettings(
             backend_mode=args.backend,
+            bridge_script_path=args.bridge_script_path,
             log_level=args.log_level,
             log_json=args.log_json,
         )

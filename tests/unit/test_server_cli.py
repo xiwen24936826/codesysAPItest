@@ -9,6 +9,7 @@ import json
 import os
 import sys
 import unittest
+from unittest.mock import patch
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
@@ -106,3 +107,29 @@ class ServerCliTests(unittest.TestCase):
         self.assertEqual(exit_code, 0)
         payload = json.loads(stream.getvalue())
         self.assertGreater(len(payload), 0)
+
+    def test_cli_supports_real_ide_backend_option(self) -> None:
+        fake_runtime = type(
+            "FakeRuntime",
+            (),
+            {"list_tools": staticmethod(lambda: []), "serve_stdio": staticmethod(lambda: 0), "serve_jsonl": staticmethod(lambda: 0), "call_tool": staticmethod(lambda **kwargs: {"ok": True})},
+        )()
+        with patch(
+            "codesys_mcp_server.server.cli.create_runtime",
+            return_value=fake_runtime,
+        ) as create_runtime:
+            stream = StringIO()
+            with redirect_stdout(stream):
+                exit_code = main(
+                    [
+                        "--backend",
+                        "real_ide",
+                        "--bridge-script-path",
+                        "D:/bridge/codesys_bridge.py",
+                        "list-tools",
+                    ]
+                )
+        self.assertEqual(exit_code, 0)
+        settings = create_runtime.call_args.args[0]
+        self.assertEqual(settings.backend_mode, "real_ide")
+        self.assertEqual(settings.bridge_script_path, "D:/bridge/codesys_bridge.py")

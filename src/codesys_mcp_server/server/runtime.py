@@ -9,7 +9,10 @@ from typing import Any
 from codesys_mcp_server.config import ServerSettings
 from codesys_mcp_server.logging import configure_logging
 
-from .factory import create_in_memory_server_application
+from .factory import (
+    create_in_memory_server_application,
+    create_real_ide_server_application,
+)
 
 
 class ServerRuntime:
@@ -23,6 +26,10 @@ class ServerRuntime:
     def _build_application(self):
         if self._settings.backend_mode == "in_memory":
             return create_in_memory_server_application()
+        if self._settings.backend_mode == "real_ide":
+            return create_real_ide_server_application(
+                bridge_script_path=self._settings.bridge_script_path
+            )
         raise ValueError("Unsupported backend mode: %s" % self._settings.backend_mode)
 
     def list_tools(self) -> list[dict[str, Any]]:

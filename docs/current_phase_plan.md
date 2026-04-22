@@ -95,6 +95,16 @@ Current Stage A conclusion:
 
 - the POU mainline is now proven on at least one real SP20 project layout
 - Phase 1 can continue on top of this verified path without depending on automatic project creation
+- the assembled local MCP server runtime is now also verified on the same manual-project path
+- a first end-to-end runtime flow passed through:
+  - `initialize`
+  - `tools/list`
+  - `tools/call(open_project)`
+  - `tools/call(create_program)`
+  - `tools/call(replace_text_document)`
+  - `tools/call(append_text_document)`
+  - `tools/call(insert_text_document)`
+  - `tools/call(read_textual_implementation)`
 
 ### Stage B
 

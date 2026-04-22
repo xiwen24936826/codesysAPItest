@@ -7,6 +7,7 @@ from pathlib import Path
 import json
 import sys
 import unittest
+from unittest.mock import patch
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
@@ -75,3 +76,20 @@ class ServerRuntimeTests(unittest.TestCase):
         )
         assert response is not None
         self.assertEqual(response["error"]["code"], -32601)
+
+    def test_runtime_supports_real_ide_backend_selection(self) -> None:
+        fake_app = object()
+        with patch(
+            "codesys_mcp_server.server.runtime.create_real_ide_server_application",
+            return_value=fake_app,
+        ) as create_real:
+            runtime = create_runtime(
+                ServerSettings(
+                    backend_mode="real_ide",
+                    bridge_script_path="D:/bridge/codesys_bridge.py",
+                )
+            )
+        self.assertIs(runtime._app, fake_app)
+        create_real.assert_called_once_with(
+            bridge_script_path="D:/bridge/codesys_bridge.py"
+        )
