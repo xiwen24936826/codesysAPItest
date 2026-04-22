@@ -1,0 +1,14 @@
+{
+  "mcpServers": {
+    "codesys-sp20": {
+      "type": "stdio",
+      "command": "powershell",
+      "args": [
+        "-ExecutionPolicy",
+        "Bypass",
+        "-File",
+        "D:\\工作资料\\codesysAPItest\\scripts\\start_mcp_server.ps1"
+      ]
+    }
+  }
+}
