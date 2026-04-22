@@ -23,6 +23,7 @@
 - `prompt.md`: 项目总目标与开发计划
 - `prompt_lite.md`: 模块化代码生成约束
 - `codesys_mcp_capability_mapping.md`: 能力清单与 API 映射表
+- `docs/mcp_client_connection.md`: 当前统一的 MCP 客户端连接方式
 
 ## 开发原则
 
@@ -31,4 +32,3 @@
 - 所有接口统一使用结构化 JSON 输入输出
 - 所有异常返回结构化错误对象
 - 所有关键能力都保留最小单元测试入口
-

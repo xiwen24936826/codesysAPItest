@@ -101,6 +101,14 @@ result = client.create_program(
 
 ## CLI
 
+当前推荐的正式客户端连接入口不是直接手写 CLI 长命令，而是：
+
+- `scripts/start_mcp_server.ps1`
+
+完整说明见：
+
+- `docs/mcp_client_connection.md`
+
 列出工具：
 
 ```bash
@@ -143,6 +151,7 @@ codesys-mcp-local --log-level DEBUG --log-json list-tools
 
 ```bash
 set CODESYS_MCP_BACKEND=in_memory
+set CODESYS_MCP_BRIDGE_SCRIPT_PATH=D:\工作资料\codesysAPItest\src\codesys_mcp_server\core\codesys_bridge.py
 set CODESYS_MCP_LOG_LEVEL=DEBUG
 set CODESYS_MCP_LOG_JSON=true
 ```
