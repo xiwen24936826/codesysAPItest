@@ -26,6 +26,7 @@ class ServerRuntimeTests(unittest.TestCase):
         names = [tool["name"] for tool in runtime.list_tools()]
         self.assertIn("create_program", names)
         self.assertIn("list_project_objects", names)
+        self.assertIn("find_project_objects", names)
         create_program_tool = next(
             tool for tool in runtime.list_tools() if tool["name"] == "create_program"
         )

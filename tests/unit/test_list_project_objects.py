@@ -40,16 +40,45 @@ class FakeProjectObjectLister:
                 "project_path": project_path,
                 "container_path": "/",
                 "children": [
-                    {"name": "MyController", "is_folder": False, "can_browse": True, "child_count": 3},
-                    {"name": "Project Information", "is_folder": False, "can_browse": False, "child_count": 0},
+                    {
+                        "name": "MyController",
+                        "is_folder": False,
+                        "can_browse": True,
+                        "child_count": 3,
+                        "is_device": True,
+                        "device_identification": {"type": "controller", "id": "Schneider_M310"},
+                    },
+                    {
+                        "name": "Project Information",
+                        "is_folder": False,
+                        "can_browse": False,
+                        "child_count": 0,
+                        "is_device": False,
+                        "device_identification": None,
+                    },
                 ],
             }
         return {
             "project_path": project_path,
             "container_path": container_path,
             "children": [
-                {"name": "Application", "is_folder": False, "can_browse": True, "child_count": 6},
-                {"name": "PLC_PRG", "is_folder": False, "can_browse": False, "child_count": 0, "object_type": "program"},
+                {
+                    "name": "Application",
+                    "is_folder": False,
+                    "can_browse": True,
+                    "child_count": 6,
+                    "is_device": False,
+                    "device_identification": None,
+                },
+                {
+                    "name": "PLC_PRG",
+                    "is_folder": False,
+                    "can_browse": False,
+                    "child_count": 0,
+                    "object_type": "program",
+                    "is_device": False,
+                    "device_identification": None,
+                },
             ],
         }
 
@@ -84,6 +113,11 @@ class ListProjectObjectsTests(unittest.TestCase):
         self.assertEqual(response["data"]["children"][0]["path"], "MyController")
         self.assertTrue(response["data"]["children"][0]["can_browse"])
         self.assertEqual(response["data"]["children"][0]["child_count"], 3)
+        self.assertTrue(response["data"]["children"][0]["is_device"])
+        self.assertEqual(
+            response["data"]["children"][0]["device_identification"],
+            {"type": "controller", "id": "Schneider_M310"},
+        )
         self.assertEqual(response["meta"]["request_id"], "req-list-001")
         self.assertEqual(
             lister.calls,
@@ -113,6 +147,8 @@ class ListProjectObjectsTests(unittest.TestCase):
                     "is_folder": False,
                     "can_browse": True,
                     "child_count": 6,
+                    "is_device": False,
+                    "device_identification": None,
                 },
                 {
                     "name": "PLC_PRG",
@@ -120,6 +156,8 @@ class ListProjectObjectsTests(unittest.TestCase):
                     "is_folder": False,
                     "can_browse": False,
                     "child_count": 0,
+                    "is_device": False,
+                    "device_identification": None,
                     "object_type": "program",
                 },
             ],

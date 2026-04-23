@@ -167,6 +167,113 @@ The repository now also enforces these write-path rules for POU source text:
 4. current real-IDE write path still stays on ASCII-only source text until
    end-to-end UTF-8 validation is proven stable
 
+## 2026-04-23 Device Tree Scan Enhancement Plan
+
+Current implementation status:
+
+- `list_project_objects` already uses tree traversal based on child enumeration
+- it does not yet expose device-specific metadata such as `is_device`
+- it does not yet expose device identification details
+- it does not yet provide a separate global search tool
+- online network scan is a separate capability and should not be mixed into
+  project-tree traversal
+
+Verified scripting API directions to use for the next scan-related improvements:
+
+1. `ScriptTreeObject.get_children()`
+2. `ScriptTreeObject.find(name, recursive=False)`
+3. `ScriptDeviceObject.is_device`
+4. `ScriptDeviceObject.get_device_identification()`
+5. `ScriptGateway.perform_network_scan()`
+6. `ScriptGateway.get_cached_network_scan_result()`
+
+### Slice 1: `list_project_objects` v2
+
+Goal:
+
+- keep the current tree traversal workflow
+- enrich scan output with device-aware metadata
+
+Planned output additions:
+
+- `is_device`
+- `device_identification`
+- `object_type` or `node_kind` when it can be derived safely
+
+Rules:
+
+- keep `can_browse` as the primary recursion signal
+- keep `is_folder` only as a compatibility field
+- do not remove existing fields that current clients already consume
+
+Success criteria:
+
+- existing recursive scan flow continues to work unchanged
+- clients can distinguish device-tree nodes from plain logical objects
+- controller and fieldbus nodes become easier to identify without relying only on names
+
+### Slice 2: `find_project_objects`
+
+Goal:
+
+- add a dedicated search tool for global object lookup by name
+
+Intended use:
+
+- locate `Application`
+- locate existing `PRG`, `FB`, `Function`
+- locate task nodes or known device-tree objects
+
+Rules:
+
+- do not replace path-based traversal with `find()`
+- keep this as a complementary search tool, not a replacement for
+  `list_project_objects`
+- return structured matches, not a single implicit winner
+
+Success criteria:
+
+- clients can resolve likely target containers faster
+- client flows need fewer repeated tree scans when they already know the object name
+
+### Slice 3: `scan_network_devices`
+
+Goal:
+
+- add a separate MCP tool for online network discovery
+
+Planned API base:
+
+- `ScriptGateway.perform_network_scan()`
+- `ScriptGateway.get_cached_network_scan_result()`
+- `ScriptScanTargetDescription.*`
+
+Rules:
+
+- keep network scan separate from project-tree scan
+- do not overload `list_project_objects` with online discovery behavior
+- treat this as part of the online/device communication capability line, not POU creation
+
+Expected output shape:
+
+- gateway identity
+- scanned target list
+- target fields such as:
+  - `device_name`
+  - `type_name`
+  - `vendor_name`
+  - `device_id`
+  - `address`
+  - `parent_address`
+  - `block_driver`
+  - `block_driver_address`
+
+Recommended implementation order:
+
+1. enhance `list_project_objects`
+2. add `find_project_objects`
+3. add `scan_network_devices`
+
 ## Client Guidance
 
 Codex can understand natural language and decompose tasks, but it still needs repository guidance.

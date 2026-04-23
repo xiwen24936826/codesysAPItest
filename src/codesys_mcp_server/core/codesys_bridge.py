@@ -122,15 +122,74 @@ def _describe_children(parent):
         except Exception:
             can_browse = False
             child_count = 0
+        is_device = bool(getattr(child, "is_device", False))
+        device_identification = None
+        if is_device and hasattr(child, "get_device_identification"):
+            try:
+                raw_identification = child.get_device_identification()
+                if isinstance(raw_identification, dict):
+                    device_identification = raw_identification
+                elif raw_identification is not None:
+                    device_identification = {"value": str(raw_identification)}
+            except Exception:
+                device_identification = None
         children.append(
             {
                 "name": _get_object_name(child),
                 "is_folder": bool(getattr(child, "is_folder", False)),
                 "can_browse": can_browse,
                 "child_count": child_count,
+                "is_device": is_device,
+                "device_identification": device_identification,
             }
         )
     return children
+
+
+def _describe_object(obj, path):
+    try:
+        grand_children = obj.get_children(False)
+        can_browse = True
+        child_count = len(list(grand_children))
+    except Exception:
+        can_browse = False
+        child_count = 0
+    is_device = bool(getattr(obj, "is_device", False))
+    device_identification = None
+    if is_device and hasattr(obj, "get_device_identification"):
+        try:
+            raw_identification = obj.get_device_identification()
+            if isinstance(raw_identification, dict):
+                device_identification = raw_identification
+            elif raw_identification is not None:
+                device_identification = {"value": str(raw_identification)}
+        except Exception:
+            device_identification = None
+    return {
+        "name": _get_object_name(obj),
+        "path": path,
+        "is_folder": bool(getattr(obj, "is_folder", False)),
+        "can_browse": can_browse,
+        "child_count": child_count,
+        "is_device": is_device,
+        "device_identification": device_identification,
+    }
+
+
+def _find_matching_objects(parent, current_path, target_name, recursive):
+    matches = []
+    for child in parent.get_children(False):
+        child_name = _get_object_name(child)
+        child_path = child_name if current_path in ("", "/") else "%s/%s" % (current_path.strip("/"), child_name)
+        if child_name == target_name:
+            matches.append(_describe_object(child, child_path))
+        if recursive:
+            try:
+                child.get_children(False)
+            except Exception:
+                continue
+            matches.extend(_find_matching_objects(child, child_path, target_name, recursive))
+    return matches
 
 
 def _handle_create(request):
@@ -377,6 +436,24 @@ def _handle_list_objects(request):
     return result
 
 
+def _handle_find_objects(request):
+    project = _open_project(request)
+    container_path = request.get("container_path", "/")
+    container = _resolve_container(project, container_path)
+    result = {
+        "project_path": project.path,
+        "container_path": container_path,
+        "matches": _find_matching_objects(
+            parent=container,
+            current_path=container_path,
+            target_name=request["object_name"],
+            recursive=request.get("recursive", True),
+        ),
+    }
+    project.close()
+    return result
+
+
 def main():
     request = _load_request()
     operation = request.get("operation")
@@ -395,6 +472,7 @@ def main():
         "append_text_document": _handle_append_text_document,
         "insert_text_document": _handle_insert_text_document,
         "list_objects": _handle_list_objects,
+        "find_objects": _handle_find_objects,
     }
 
     if operation not in handlers:

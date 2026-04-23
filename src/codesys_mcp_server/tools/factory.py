@@ -18,6 +18,7 @@ from codesys_mcp_server.services.pous import (
 from codesys_mcp_server.services.projects import (
     add_controller_device,
     create_project,
+    find_project_objects,
     list_project_objects,
     open_project,
     save_project,
@@ -58,6 +59,14 @@ def _bind_list_project_objects(backend: Any) -> ToolHandler:
     return lambda request, request_id=None: list_project_objects(
         request=request,
         project_object_lister=backend,
+        request_id=request_id,
+    )
+
+
+def _bind_find_project_objects(backend: Any) -> ToolHandler:
+    return lambda request, request_id=None: find_project_objects(
+        request=request,
+        project_object_finder=backend,
         request_id=request_id,
     )
 
@@ -160,6 +169,12 @@ TOOL_SPECS = [
         description="List child objects below a logical container in the project tree.",
         input_schema={"type": "object", "required": ["project_path"]},
         handler_builder=_bind_list_project_objects,
+    ),
+    ToolSpec(
+        name="find_project_objects",
+        description="Find matching objects by name below a logical container in the project tree.",
+        input_schema={"type": "object", "required": ["project_path", "object_name"]},
+        handler_builder=_bind_find_project_objects,
     ),
     ToolSpec(
         name="save_project",

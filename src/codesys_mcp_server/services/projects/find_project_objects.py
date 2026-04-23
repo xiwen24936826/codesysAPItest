@@ -1,4 +1,4 @@
-"""Project-tree scan service for explicit container discovery."""
+"""Project-tree search service for explicit object lookup."""
 
 from __future__ import annotations
 
@@ -11,31 +11,35 @@ from .._service_common import begin_service_call, build_log_extra, error_respons
 
 
 LOGGER = logging.getLogger(__name__)
-TOOL_NAME = "list_project_objects"
+TOOL_NAME = "find_project_objects"
 
 
-class ProjectObjectLister(Protocol):
-    """Protocol for adapters that can list child objects in a project tree."""
+class ProjectObjectFinder(Protocol):
+    """Protocol for adapters that can search objects in a project tree."""
 
-    def list_objects(
+    def find_objects(
         self,
         project_path: str,
+        object_name: str,
         container_path: str = "/",
+        recursive: bool = True,
     ) -> Any:
-        """Return child objects below the target logical container."""
+        """Return matching objects below the target logical container."""
 
 
 @dataclass(frozen=True)
-class ListProjectObjectsRequest:
-    """Validated request payload for the list_project_objects tool."""
+class FindProjectObjectsRequest:
+    """Validated request payload for the find_project_objects tool."""
 
     project_path: str
+    object_name: str
     container_path: str = "/"
+    recursive: bool = True
 
 
 @dataclass(frozen=True)
-class ListProjectObjectsValidationError(Exception):
-    """Validation error for list_project_objects requests."""
+class FindProjectObjectsValidationError(Exception):
+    """Validation error for find_project_objects requests."""
 
     message: str
     details: dict[str, Any]
@@ -45,34 +49,40 @@ class ListProjectObjectsValidationError(Exception):
         return self.message
 
 
-def list_project_objects(
+def find_project_objects(
     request: dict[str, Any],
-    project_object_lister: ProjectObjectLister,
+    project_object_finder: ProjectObjectFinder,
     request_id: str | None = None,
 ) -> dict[str, Any]:
-    """List child objects below a project-tree container."""
+    """Find matching objects below a project-tree container."""
     service_call = begin_service_call(request_id)
 
     try:
         validated_request = _validate_request(request)
-        listing = project_object_lister.list_objects(
+        listing = project_object_finder.find_objects(
             project_path=validated_request.project_path,
+            object_name=validated_request.object_name,
             container_path=validated_request.container_path,
+            recursive=validated_request.recursive,
         )
-        response_data = _normalize_listing(
+        response_data = _normalize_matches(
             project_path=validated_request.project_path,
             requested_container_path=validated_request.container_path,
+            object_name=validated_request.object_name,
+            recursive=validated_request.recursive,
             listing=listing,
         )
 
         LOGGER.info(
-            "list_project_objects succeeded",
+            "find_project_objects succeeded",
             extra=build_log_extra(
                 tool_name=TOOL_NAME,
                 request_id=service_call.request_id,
                 status="success",
                 project_path=validated_request.project_path,
                 container_path=response_data["container_path"],
+                object_name=validated_request.object_name,
+                match_count=len(response_data["matches"]),
             ),
         )
         return success_response(
@@ -81,9 +91,9 @@ def list_project_objects(
             request_id=service_call.request_id,
             started_at=service_call.started_at,
         )
-    except ListProjectObjectsValidationError as exc:
+    except FindProjectObjectsValidationError as exc:
         LOGGER.warning(
-            "list_project_objects validation failed",
+            "find_project_objects validation failed",
             extra=build_log_extra(
                 tool_name=TOOL_NAME,
                 request_id=service_call.request_id,
@@ -91,6 +101,7 @@ def list_project_objects(
                 error_code=exc.code,
                 project_path=request.get("project_path"),
                 container_path=request.get("container_path"),
+                object_name=request.get("object_name"),
             ),
         )
         return error_response(
@@ -102,17 +113,6 @@ def list_project_objects(
             started_at=service_call.started_at,
         )
     except FileNotFoundError:
-        LOGGER.warning(
-            "list_project_objects target project was not found",
-            extra=build_log_extra(
-                tool_name=TOOL_NAME,
-                request_id=service_call.request_id,
-                status="failed",
-                error_code="PROJECT_NOT_FOUND",
-                project_path=request.get("project_path"),
-                container_path=request.get("container_path"),
-            ),
-        )
         return error_response(
             tool_name=TOOL_NAME,
             code="PROJECT_NOT_FOUND",
@@ -122,17 +122,6 @@ def list_project_objects(
             started_at=service_call.started_at,
         )
     except LookupError as exc:
-        LOGGER.warning(
-            "list_project_objects could not resolve container",
-            extra=build_log_extra(
-                tool_name=TOOL_NAME,
-                request_id=service_call.request_id,
-                status="failed",
-                error_code="CONTAINER_NOT_FOUND",
-                project_path=request.get("project_path"),
-                container_path=request.get("container_path", "/"),
-            ),
-        )
         return error_response(
             tool_name=TOOL_NAME,
             code="CONTAINER_NOT_FOUND",
@@ -146,7 +135,7 @@ def list_project_objects(
         )
     except Exception as exc:  # pragma: no cover - adapter safety net
         LOGGER.exception(
-            "list_project_objects failed with unexpected error",
+            "find_project_objects failed with unexpected error",
             extra=build_log_extra(
                 tool_name=TOOL_NAME,
                 request_id=service_call.request_id,
@@ -154,96 +143,110 @@ def list_project_objects(
                 error_code="INTERNAL_ERROR",
                 project_path=request.get("project_path"),
                 container_path=request.get("container_path"),
+                object_name=request.get("object_name"),
             ),
         )
         return error_response(
             tool_name=TOOL_NAME,
             code="INTERNAL_ERROR",
-            message="Unexpected error while listing project objects.",
+            message="Unexpected error while finding project objects.",
             details={"exception": str(exc)},
             request_id=service_call.request_id,
             started_at=service_call.started_at,
         )
 
 
-def _validate_request(request: dict[str, Any]) -> ListProjectObjectsRequest:
+def _validate_request(request: dict[str, Any]) -> FindProjectObjectsRequest:
     project_path = request.get("project_path")
     if not isinstance(project_path, str) or not project_path.strip():
-        raise ListProjectObjectsValidationError(
+        raise FindProjectObjectsValidationError(
             message="Field 'project_path' is required.",
             details={"field": "project_path"},
         )
 
     if not Path(project_path).is_absolute():
-        raise ListProjectObjectsValidationError(
+        raise FindProjectObjectsValidationError(
             message="Field 'project_path' must be an absolute path.",
             details={"field": "project_path", "value": project_path},
         )
 
+    object_name = request.get("object_name")
+    if not isinstance(object_name, str) or not object_name.strip():
+        raise FindProjectObjectsValidationError(
+            message="Field 'object_name' is required.",
+            details={"field": "object_name"},
+        )
+
     container_path = request.get("container_path", "/")
     if not isinstance(container_path, str) or not container_path.strip():
-        raise ListProjectObjectsValidationError(
+        raise FindProjectObjectsValidationError(
             message="Field 'container_path' must be a non-empty string when provided.",
             details={"field": "container_path", "value": container_path},
         )
 
-    return ListProjectObjectsRequest(
+    recursive = request.get("recursive", True)
+    if not isinstance(recursive, bool):
+        raise FindProjectObjectsValidationError(
+            message="Field 'recursive' must be a boolean when provided.",
+            details={"field": "recursive", "value": recursive},
+        )
+
+    return FindProjectObjectsRequest(
         project_path=project_path,
+        object_name=object_name.strip(),
         container_path=container_path.strip(),
+        recursive=recursive,
     )
 
 
-def _normalize_listing(
+def _normalize_matches(
     project_path: str,
     requested_container_path: str,
+    object_name: str,
+    recursive: bool,
     listing: Any,
 ) -> dict[str, Any]:
     if not isinstance(listing, dict):
-        raise TypeError("Project object lister returned an unsupported result.")
+        raise TypeError("Project object finder returned an unsupported result.")
 
     resolved_container_path = listing.get("container_path")
     if not isinstance(resolved_container_path, str) or not resolved_container_path.strip():
         resolved_container_path = requested_container_path
 
-    raw_children = listing.get("children", [])
-    if not isinstance(raw_children, list):
-        raise TypeError("Field 'children' must be a list.")
+    raw_matches = listing.get("matches", [])
+    if not isinstance(raw_matches, list):
+        raise TypeError("Field 'matches' must be a list.")
 
-    children: list[dict[str, Any]] = []
-    for child in raw_children:
-        if not isinstance(child, dict):
+    matches: list[dict[str, Any]] = []
+    for match in raw_matches:
+        if not isinstance(match, dict):
             continue
-        name = child.get("name")
+        name = match.get("name")
         if not isinstance(name, str) or not name:
             continue
 
-        normalized_child = {
+        normalized_match = {
             "name": name,
-            "path": child.get("path") or _join_container_path(resolved_container_path, name),
-            "is_folder": bool(child.get("is_folder", False)),
-            "can_browse": bool(child.get("can_browse", child.get("is_folder", False))),
-            "is_device": bool(child.get("is_device", False)),
+            "path": match.get("path"),
+            "is_folder": bool(match.get("is_folder", False)),
+            "can_browse": bool(match.get("can_browse", match.get("is_folder", False))),
+            "is_device": bool(match.get("is_device", False)),
         }
-        if "child_count" in child:
-            normalized_child["child_count"] = child["child_count"]
-        if "object_type" in child:
-            normalized_child["object_type"] = child["object_type"]
-        device_identification = child.get("device_identification")
+        if "child_count" in match:
+            normalized_match["child_count"] = match["child_count"]
+        if "object_type" in match:
+            normalized_match["object_type"] = match["object_type"]
+        device_identification = match.get("device_identification")
         if isinstance(device_identification, dict):
-            normalized_child["device_identification"] = device_identification
+            normalized_match["device_identification"] = device_identification
         elif device_identification is None:
-            normalized_child["device_identification"] = None
-        children.append(normalized_child)
+            normalized_match["device_identification"] = None
+        matches.append(normalized_match)
 
     return {
         "project_path": project_path,
         "container_path": resolved_container_path,
-        "children": children,
+        "object_name": object_name,
+        "recursive": recursive,
+        "matches": matches,
     }
-
-
-def _join_container_path(parent_path: str, child_name: str) -> str:
-    normalized_parent = (parent_path or "/").strip("/")
-    if not normalized_parent:
-        return child_name
-    return "%s/%s" % (normalized_parent, child_name)

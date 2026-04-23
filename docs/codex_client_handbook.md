@@ -23,6 +23,11 @@ When scanning the project tree, prefer `can_browse` over `is_folder`.
   on its own for real SP20 device-tree traversal.
 - `child_count` is advisory. It helps prioritize likely containers, but clients
   should still rely on `can_browse` for recursion decisions.
+- `is_device: true` means the node should be treated as a device-tree object,
+  not just a logical folder-like container.
+- `device_identification` carries device metadata when the real scripting API
+  can resolve it. Clients should treat it as optional enrichment rather than a
+  guaranteed field.
 
 Current write-path guardrails:
 

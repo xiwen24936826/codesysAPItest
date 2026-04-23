@@ -75,6 +75,40 @@ class FakeBackend:
                     "is_folder": False,
                     "can_browse": True,
                     "child_count": 4,
+                    "is_device": False,
+                    "device_identification": None,
+                }
+            ],
+        }
+
+    def find_objects(
+        self,
+        project_path: str,
+        object_name: str,
+        container_path: str = "/",
+        recursive: bool = True,
+    ) -> dict[str, object]:
+        self.calls.append(
+            {
+                "tool": "find_project_objects",
+                "project_path": project_path,
+                "object_name": object_name,
+                "container_path": container_path,
+                "recursive": recursive,
+            }
+        )
+        return {
+            "project_path": project_path,
+            "container_path": container_path,
+            "matches": [
+                {
+                    "name": object_name,
+                    "path": "Application/%s" % object_name,
+                    "is_folder": False,
+                    "can_browse": False,
+                    "child_count": 0,
+                    "is_device": False,
+                    "device_identification": None,
                 }
             ],
         }
@@ -116,5 +150,20 @@ class ServerApplicationTests(unittest.TestCase):
         self.assertTrue(result.ok)
         self.assertEqual(result.payload["data"]["children"][0]["name"], "Application")
         self.assertTrue(result.payload["data"]["children"][0]["can_browse"])
+        self.assertFalse(result.payload["data"]["children"][0]["is_device"])
+        self.assertIsNone(result.payload["data"]["children"][0]["device_identification"])
         self.assertEqual(result.payload["meta"]["request_id"], "server-002")
         self.assertEqual(backend.calls[0]["tool"], "list_project_objects")
+
+    def test_call_tool_dispatches_project_find(self) -> None:
+        backend = FakeBackend()
+        app = create_server_application(backend)
+        result = app.call_tool(
+            name="find_project_objects",
+            arguments={"project_path": "D:/Projects/demo.project", "object_name": "PLC_PRG"},
+            request_id="server-003",
+        )
+        self.assertTrue(result.ok)
+        self.assertEqual(result.payload["data"]["matches"][0]["name"], "PLC_PRG")
+        self.assertEqual(result.payload["meta"]["request_id"], "server-003")
+        self.assertEqual(backend.calls[0]["tool"], "find_project_objects")

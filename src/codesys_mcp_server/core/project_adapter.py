@@ -399,6 +399,24 @@ class CodesysProjectAdapter:
             }
         )
 
+    def find_objects(
+        self,
+        project_path: str,
+        object_name: str,
+        container_path: str = "/",
+        recursive: bool = True,
+    ) -> dict[str, Any]:
+        """Find matching objects below the given logical container."""
+        return self._runner.run_operation(
+            {
+                "operation": "find_objects",
+                "project_path": project_path,
+                "object_name": object_name,
+                "container_path": container_path,
+                "recursive": recursive,
+            }
+        )
+
     def copy_project_for_testing(
         self,
         source_project_path: str,

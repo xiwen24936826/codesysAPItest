@@ -217,7 +217,14 @@ class InMemoryCodesysBackend:
                 "project_path": project_path,
                 "container_path": "/",
                 "children": [
-                    {"name": name, "is_folder": True, "can_browse": True, "child_count": len(project.root_objects[name])}
+                    {
+                        "name": name,
+                        "is_folder": True,
+                        "can_browse": True,
+                        "child_count": len(project.root_objects[name]),
+                        "is_device": False,
+                        "device_identification": None,
+                    }
                     for name in project.root_objects.keys()
                 ],
             }
@@ -227,12 +234,74 @@ class InMemoryCodesysBackend:
                 "project_path": project_path,
                 "container_path": normalized,
                 "children": [
-                    {"name": name, "is_folder": False, "can_browse": False, "child_count": 0}
+                    {
+                        "name": name,
+                        "is_folder": False,
+                        "can_browse": False,
+                        "child_count": 0,
+                        "is_device": False,
+                        "device_identification": None,
+                    }
                     for name in project.root_objects[normalized].keys()
                 ],
             }
 
         raise LookupError("Container '%s' was not found." % container_path)
+
+    def find_objects(
+        self,
+        project_path: str,
+        object_name: str,
+        container_path: str = "/",
+        recursive: bool = True,
+    ) -> dict[str, object]:
+        listing = self.list_objects(project_path=project_path, container_path=container_path)
+        normalized_root = container_path.strip("/")
+        matches = []
+
+        for child in listing["children"]:
+            if child["name"] == object_name:
+                path = child.get("path") or (
+                    child["name"] if not normalized_root else "%s/%s" % (normalized_root, child["name"])
+                )
+                matches.append(
+                    {
+                        "name": child["name"],
+                        "path": path,
+                        "is_folder": child.get("is_folder", False),
+                        "can_browse": child.get("can_browse", False),
+                        "child_count": child.get("child_count", 0),
+                        "is_device": child.get("is_device", False),
+                        "device_identification": child.get("device_identification"),
+                    }
+                )
+
+        if recursive:
+            project = self._require_project(project_path)
+            for root_name, root_objects in project.root_objects.items():
+                if normalized_root not in ("", root_name):
+                    continue
+                for pou_name, pou in root_objects.items():
+                    if pou_name != object_name:
+                        continue
+                    matches.append(
+                        {
+                            "name": pou_name,
+                            "path": "%s/%s" % (root_name, pou_name),
+                            "is_folder": False,
+                            "can_browse": False,
+                            "child_count": 0,
+                            "is_device": False,
+                            "device_identification": None,
+                            "object_type": pou.object_type,
+                        }
+                    )
+
+        return {
+            "project_path": project_path,
+            "container_path": container_path,
+            "matches": matches,
+        }
 
     def _require_project(self, path: str) -> InMemoryProject:
         try:
