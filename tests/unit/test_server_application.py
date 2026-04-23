@@ -69,7 +69,14 @@ class FakeBackend:
         return {
             "project_path": project_path,
             "container_path": container_path,
-            "children": [{"name": "Application", "is_folder": True}],
+            "children": [
+                {
+                    "name": "Application",
+                    "is_folder": False,
+                    "can_browse": True,
+                    "child_count": 4,
+                }
+            ],
         }
 
 
@@ -108,5 +115,6 @@ class ServerApplicationTests(unittest.TestCase):
         )
         self.assertTrue(result.ok)
         self.assertEqual(result.payload["data"]["children"][0]["name"], "Application")
+        self.assertTrue(result.payload["data"]["children"][0]["can_browse"])
         self.assertEqual(result.payload["meta"]["request_id"], "server-002")
         self.assertEqual(backend.calls[0]["tool"], "list_project_objects")

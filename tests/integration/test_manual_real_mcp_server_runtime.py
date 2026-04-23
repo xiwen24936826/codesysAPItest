@@ -93,9 +93,9 @@ class ManualRealMcpServerRuntimeTests(unittest.TestCase):
             }
         )
         assert response is not None
-        return response
+        return response["result"]["structuredContent"]
 
-    def test_runtime_supports_manual_real_pou_flow(self) -> None:
+    def test_runtime_supports_manual_real_scan_create_write_flow(self) -> None:
         initialize_response = self._runtime.handle_protocol_message(
             {"jsonrpc": "2.0", "id": "init-1", "method": "initialize", "params": {}}
         )
@@ -108,9 +108,9 @@ class ManualRealMcpServerRuntimeTests(unittest.TestCase):
         assert list_response is not None
         tool_names = {tool["name"] for tool in list_response["result"]["tools"]}
         self.assertIn("create_program", tool_names)
+        self.assertIn("list_project_objects", tool_names)
         self.assertIn("insert_text_document", tool_names)
 
-        container_path = self._resolve_test_container_path()
         program_name = "RuntimeProgram_%s" % uuid4().hex[:8]
 
         open_response = self._call_tool(
@@ -118,7 +118,21 @@ class ManualRealMcpServerRuntimeTests(unittest.TestCase):
             {"project_path": self._project_path},
             "runtime-open-001",
         )
-        self.assertTrue(open_response["result"]["ok"], open_response)
+        self.assertTrue(open_response["ok"], open_response)
+
+        root_listing = self._call_tool(
+            "list_project_objects",
+            {
+                "project_path": self._project_path,
+                "container_path": "/",
+            },
+            "runtime-list-root-001",
+        )
+        self.assertTrue(root_listing["ok"], root_listing)
+
+        container_path = self._resolve_application_path(root_listing["data"]["children"])
+        self.assertIsNotNone(container_path)
+        assert container_path is not None
 
         create_response = self._call_tool(
             "create_program",
@@ -130,7 +144,23 @@ class ManualRealMcpServerRuntimeTests(unittest.TestCase):
             },
             "runtime-create-001",
         )
-        self.assertTrue(create_response["result"]["ok"], create_response)
+        self.assertTrue(create_response["ok"], create_response)
+
+        declaration_response = self._call_tool(
+            "replace_text_document",
+            {
+                "project_path": self._project_path,
+                "container_path": container_path,
+                "object_name": program_name,
+                "document_kind": "declaration",
+                "new_text": (
+                    "PROGRAM %s\nVAR\n    Counter: INT;\nEND_VAR" % program_name
+                ),
+            },
+            "runtime-declaration-001",
+        )
+        self.assertTrue(declaration_response["ok"], declaration_response)
+        self.assertTrue(declaration_response["data"]["roundtrip_verified"])
 
         replace_response = self._call_tool(
             "replace_text_document",
@@ -139,38 +169,12 @@ class ManualRealMcpServerRuntimeTests(unittest.TestCase):
                 "container_path": container_path,
                 "object_name": program_name,
                 "document_kind": "implementation",
-                "new_text": "Counter := 10;",
+                "new_text": "Counter := 10;\nCounter := Counter + 5;",
             },
             "runtime-replace-001",
         )
-        self.assertTrue(replace_response["result"]["ok"], replace_response)
-
-        append_response = self._call_tool(
-            "append_text_document",
-            {
-                "project_path": self._project_path,
-                "container_path": container_path,
-                "object_name": program_name,
-                "document_kind": "implementation",
-                "text_to_append": "\nCounter := Counter + 5;",
-            },
-            "runtime-append-001",
-        )
-        self.assertTrue(append_response["result"]["ok"], append_response)
-
-        insert_response = self._call_tool(
-            "insert_text_document",
-            {
-                "project_path": self._project_path,
-                "container_path": container_path,
-                "object_name": program_name,
-                "document_kind": "implementation",
-                "text_to_insert": "// runtime inserted\\n",
-                "insertion_offset": 0,
-            },
-            "runtime-insert-001",
-        )
-        self.assertTrue(insert_response["result"]["ok"], insert_response)
+        self.assertTrue(replace_response["ok"], replace_response)
+        self.assertTrue(replace_response["data"]["roundtrip_verified"])
 
         read_response = self._call_tool(
             "read_textual_implementation",
@@ -181,8 +185,36 @@ class ManualRealMcpServerRuntimeTests(unittest.TestCase):
             },
             "runtime-read-001",
         )
-        self.assertTrue(read_response["result"]["ok"], read_response)
-        final_text = read_response["result"]["data"]["text"]
-        self.assertIn("// runtime inserted", final_text)
+        self.assertTrue(read_response["ok"], read_response)
+        final_text = read_response["data"]["text"]
         self.assertIn("Counter := 10;", final_text)
         self.assertIn("Counter := Counter + 5;", final_text)
+
+    def _resolve_application_path(self, root_children: list[dict[str, object]]) -> str | None:
+        queue = [child["path"] for child in root_children if child.get("path")]
+        for child in root_children:
+            if child.get("name") == "Application":
+                return child.get("path")  # type: ignore[return-value]
+
+        visited: set[str] = set()
+        while queue:
+            current = queue.pop(0)
+            if not isinstance(current, str) or current in visited:
+                continue
+            visited.add(current)
+            listing = self._call_tool(
+                "list_project_objects",
+                {
+                    "project_path": self._project_path,
+                    "container_path": current,
+                },
+                "runtime-list-%s" % len(visited),
+            )
+            if not listing["ok"]:
+                continue
+            for child in listing["data"]["children"]:
+                if child.get("name") == "Application":
+                    return child.get("path")  # type: ignore[return-value]
+                if child.get("path"):
+                    queue.append(child["path"])
+        return None

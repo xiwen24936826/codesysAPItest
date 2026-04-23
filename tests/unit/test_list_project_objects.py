@@ -40,16 +40,16 @@ class FakeProjectObjectLister:
                 "project_path": project_path,
                 "container_path": "/",
                 "children": [
-                    {"name": "MyController", "is_folder": True},
-                    {"name": "Project Information", "is_folder": True},
+                    {"name": "MyController", "is_folder": False, "can_browse": True, "child_count": 3},
+                    {"name": "Project Information", "is_folder": False, "can_browse": False, "child_count": 0},
                 ],
             }
         return {
             "project_path": project_path,
             "container_path": container_path,
             "children": [
-                {"name": "Application", "is_folder": True},
-                {"name": "PLC_PRG", "is_folder": False, "object_type": "program"},
+                {"name": "Application", "is_folder": False, "can_browse": True, "child_count": 6},
+                {"name": "PLC_PRG", "is_folder": False, "can_browse": False, "child_count": 0, "object_type": "program"},
             ],
         }
 
@@ -82,6 +82,8 @@ class ListProjectObjectsTests(unittest.TestCase):
         self.assertEqual(response["data"]["container_path"], "/")
         self.assertEqual(response["data"]["children"][0]["name"], "MyController")
         self.assertEqual(response["data"]["children"][0]["path"], "MyController")
+        self.assertTrue(response["data"]["children"][0]["can_browse"])
+        self.assertEqual(response["data"]["children"][0]["child_count"], 3)
         self.assertEqual(response["meta"]["request_id"], "req-list-001")
         self.assertEqual(
             lister.calls,
@@ -108,12 +110,16 @@ class ListProjectObjectsTests(unittest.TestCase):
                 {
                     "name": "Application",
                     "path": "MyController/PLCLogic/Application",
-                    "is_folder": True,
+                    "is_folder": False,
+                    "can_browse": True,
+                    "child_count": 6,
                 },
                 {
                     "name": "PLC_PRG",
                     "path": "MyController/PLCLogic/PLC_PRG",
                     "is_folder": False,
+                    "can_browse": False,
+                    "child_count": 0,
                     "object_type": "program",
                 },
             ],

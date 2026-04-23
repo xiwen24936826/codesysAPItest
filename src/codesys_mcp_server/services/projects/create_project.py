@@ -3,12 +3,11 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from datetime import datetime
 import logging
 from pathlib import Path
-import time
 from typing import Any, Protocol
-from uuid import uuid4
+
+from .._service_common import begin_service_call, build_log_extra, error_response, success_response
 
 
 LOGGER = logging.getLogger(__name__)
@@ -39,8 +38,7 @@ def create_project(
     request_id: str | None = None,
 ) -> dict[str, Any]:
     """Create a new project and return a structured MCP-style response."""
-    started_at = time.perf_counter()
-    resolved_request_id = request_id or str(uuid4())
+    service_call = begin_service_call(request_id)
 
     try:
         validated_request = _validate_request(request)
@@ -65,56 +63,59 @@ def create_project(
 
         LOGGER.info(
             "create_project succeeded",
-            extra={
-                "tool": TOOL_NAME,
-                "request_id": resolved_request_id,
-                "project_path": validated_request.project_path,
-                "project_mode": validated_request.project_mode,
-                "status": "success",
-            },
+            extra=build_log_extra(
+                tool_name=TOOL_NAME,
+                request_id=service_call.request_id,
+                status="success",
+                project_path=validated_request.project_path,
+                project_mode=validated_request.project_mode,
+            ),
         )
-        return _success_response(
+        return success_response(
+            tool_name=TOOL_NAME,
             data=response_data,
-            request_id=resolved_request_id,
-            started_at=started_at,
+            request_id=service_call.request_id,
+            started_at=service_call.started_at,
         )
     except CreateProjectValidationError as exc:
         LOGGER.warning(
             "create_project validation failed",
-            extra={
-                "tool": TOOL_NAME,
-                "request_id": resolved_request_id,
-                "project_path": request.get("project_path"),
-                "project_mode": request.get("project_mode"),
-                "status": "failed",
-                "error_code": exc.code,
-            },
+            extra=build_log_extra(
+                tool_name=TOOL_NAME,
+                request_id=service_call.request_id,
+                status="failed",
+                error_code=exc.code,
+                project_path=request.get("project_path"),
+                project_mode=request.get("project_mode"),
+            ),
         )
-        return _error_response(
+        return error_response(
+            tool_name=TOOL_NAME,
             code=exc.code,
             message=exc.message,
             details=exc.details,
-            request_id=resolved_request_id,
-            started_at=started_at,
+            request_id=service_call.request_id,
+            started_at=service_call.started_at,
         )
     except Exception as exc:  # pragma: no cover - safety net for unexpected adapter failures
         LOGGER.exception(
             "create_project failed with unexpected error",
-            extra={
-                "tool": TOOL_NAME,
-                "request_id": resolved_request_id,
-                "project_path": request.get("project_path"),
-                "project_mode": request.get("project_mode"),
-                "status": "failed",
-                "error_code": "INTERNAL_ERROR",
-            },
+            extra=build_log_extra(
+                tool_name=TOOL_NAME,
+                request_id=service_call.request_id,
+                status="failed",
+                error_code="INTERNAL_ERROR",
+                project_path=request.get("project_path"),
+                project_mode=request.get("project_mode"),
+            ),
         )
-        return _error_response(
+        return error_response(
+            tool_name=TOOL_NAME,
             code="INTERNAL_ERROR",
             message="Unexpected error while creating project.",
             details={"exception": str(exc)},
-            request_id=resolved_request_id,
-            started_at=started_at,
+            request_id=service_call.request_id,
+            started_at=service_call.started_at,
         )
 
 
@@ -178,46 +179,3 @@ def _validate_request(request: dict[str, Any]) -> CreateProjectRequest:
         set_as_primary=set_as_primary,
         template_project_path=template_project_path,
     )
-
-
-def _success_response(
-    data: dict[str, Any],
-    request_id: str,
-    started_at: float,
-) -> dict[str, Any]:
-    return {
-        "ok": True,
-        "tool": TOOL_NAME,
-        "data": data,
-        "error": None,
-        "meta": _build_meta(request_id=request_id, started_at=started_at),
-    }
-
-
-def _error_response(
-    code: str,
-    message: str,
-    details: dict[str, Any],
-    request_id: str,
-    started_at: float,
-) -> dict[str, Any]:
-    return {
-        "ok": False,
-        "tool": TOOL_NAME,
-        "data": None,
-        "error": {
-            "code": code,
-            "message": message,
-            "details": details,
-        },
-        "meta": _build_meta(request_id=request_id, started_at=started_at),
-    }
-
-
-def _build_meta(request_id: str, started_at: float) -> dict[str, Any]:
-    return {
-        "timestamp": datetime.now().astimezone().isoformat(timespec="seconds"),
-        "request_id": request_id,
-        "duration_ms": round((time.perf_counter() - started_at) * 1000),
-    }
-

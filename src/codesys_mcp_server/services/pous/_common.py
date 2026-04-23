@@ -2,11 +2,11 @@
 
 from __future__ import annotations
 
-from datetime import datetime
 from pathlib import Path
 import re
-import time
-from typing import Any
+from typing import Any, Callable
+
+from .._service_common import build_meta, error_response, success_response
 
 
 DEFAULT_LANGUAGE = "ST"
@@ -84,51 +84,6 @@ IEC_TYPES = {
     "USINT",
     "WORD",
 }
-
-
-def success_response(
-    tool_name: str,
-    data: dict[str, Any],
-    request_id: str,
-    started_at: float,
-) -> dict[str, Any]:
-    return {
-        "ok": True,
-        "tool": tool_name,
-        "data": data,
-        "error": None,
-        "meta": build_meta(request_id=request_id, started_at=started_at),
-    }
-
-
-def error_response(
-    tool_name: str,
-    code: str,
-    message: str,
-    details: dict[str, Any],
-    request_id: str,
-    started_at: float,
-) -> dict[str, Any]:
-    return {
-        "ok": False,
-        "tool": tool_name,
-        "data": None,
-        "error": {
-            "code": code,
-            "message": message,
-            "details": details,
-        },
-        "meta": build_meta(request_id=request_id, started_at=started_at),
-    }
-
-
-def build_meta(request_id: str, started_at: float) -> dict[str, Any]:
-    return {
-        "timestamp": datetime.now().astimezone().isoformat(timespec="seconds"),
-        "request_id": request_id,
-        "duration_ms": round((time.perf_counter() - started_at) * 1000),
-    }
-
 
 def require_absolute_path(
     field: str,
@@ -330,6 +285,69 @@ def verify_roundtrip_text(
             code="TEXT_ROUNDTRIP_VERIFICATION_FAILED",
         )
     return actual_text
+
+
+def execute_text_write_flow(
+    *,
+    adapter: Any,
+    validated_request: Any,
+    validation_error_cls: type[Exception],
+    build_expected_text: Callable[[str], str],
+    perform_write: Callable[[str], None],
+) -> tuple[str, str]:
+    resolved_container_path = resolve_effective_container_path(
+        browser=adapter,
+        project_path=validated_request.project_path,
+        requested_container_path=validated_request.container_path,
+    )
+
+    current_text = read_document_text(
+        adapter=adapter,
+        project_path=validated_request.project_path,
+        container_path=resolved_container_path,
+        object_name=validated_request.object_name,
+        document_kind=validated_request.document_kind,
+    )
+    expected_text = build_expected_text(current_text)
+
+    if validated_request.document_kind == "declaration":
+        current_implementation = read_document_text(
+            adapter=adapter,
+            project_path=validated_request.project_path,
+            container_path=resolved_container_path,
+            object_name=validated_request.object_name,
+            document_kind="implementation",
+        )
+        validate_declaration_implementation_consistency(
+            declaration_text=expected_text,
+            implementation_text=current_implementation,
+            error_cls=validation_error_cls,
+        )
+    else:
+        current_declaration = read_document_text(
+            adapter=adapter,
+            project_path=validated_request.project_path,
+            container_path=resolved_container_path,
+            object_name=validated_request.object_name,
+            document_kind="declaration",
+        )
+        validate_declaration_implementation_consistency(
+            declaration_text=current_declaration,
+            implementation_text=expected_text,
+            error_cls=validation_error_cls,
+        )
+
+    perform_write(resolved_container_path)
+    verify_roundtrip_text(
+        adapter=adapter,
+        project_path=validated_request.project_path,
+        container_path=resolved_container_path,
+        object_name=validated_request.object_name,
+        document_kind=validated_request.document_kind,
+        expected_text=expected_text,
+        error_cls=validation_error_cls,
+    )
+    return resolved_container_path, expected_text
 
 
 def validate_declaration_implementation_consistency(

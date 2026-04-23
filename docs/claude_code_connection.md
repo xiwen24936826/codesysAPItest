@@ -14,6 +14,13 @@ The service layer still accepts `/` or `Application` and tries to auto-resolve t
 real nested container, but the explicit scan-first workflow is now the recommended
 path for reliable demos and client integrations.
 
+During recursive scans, Claude Code should now prefer the returned `can_browse`
+flag instead of relying on `is_folder`.
+
+- recurse when `can_browse` is `true`
+- do not assume `is_folder == false` means the node is not a container
+- use `child_count` only as a hint, not as the recursion rule
+
 更新时间：2026-04-23
 
 本文档固定 Claude Code 作为客户端时的连接方式。

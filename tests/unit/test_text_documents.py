@@ -273,7 +273,8 @@ class TextDocumentServiceTests(unittest.TestCase):
 
         self.assertTrue(response["ok"])
         self.assertEqual(response["data"]["text_length"], 0)
-        self.assertEqual(writer.calls[1]["new_text"], "")
+        replace_call = next(call for call in writer.calls if call["kind"] == "replace")
+        self.assertEqual(replace_call["new_text"], "")
         self.assertTrue(response["data"]["roundtrip_verified"])
 
     def test_append_text_document_appends_to_tail(self) -> None:

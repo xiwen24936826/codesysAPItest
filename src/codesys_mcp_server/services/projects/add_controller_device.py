@@ -3,12 +3,11 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from datetime import datetime
 import logging
 from pathlib import Path
-import time
 from typing import Any, Protocol
-from uuid import uuid4
+
+from .._service_common import begin_service_call, build_log_extra, error_response, success_response
 
 
 LOGGER = logging.getLogger(__name__)
@@ -60,8 +59,7 @@ def add_controller_device(
     request_id: str | None = None,
 ) -> dict[str, Any]:
     """Add a controller device and return a structured MCP-style response."""
-    started_at = time.perf_counter()
-    resolved_request_id = request_id or str(uuid4())
+    service_call = begin_service_call(request_id)
 
     try:
         validated_request = _validate_request(request)
@@ -86,73 +84,77 @@ def add_controller_device(
 
         LOGGER.info(
             "add_controller_device succeeded",
-            extra={
-                "tool": TOOL_NAME,
-                "request_id": resolved_request_id,
-                "project_path": validated_request.project_path,
-                "device_name": validated_request.device_name,
-                "device_type": validated_request.device_type,
-                "status": "success",
-            },
+            extra=build_log_extra(
+                tool_name=TOOL_NAME,
+                request_id=service_call.request_id,
+                status="success",
+                project_path=validated_request.project_path,
+                device_name=validated_request.device_name,
+                device_type=validated_request.device_type,
+            ),
         )
-        return _success_response(
+        return success_response(
+            tool_name=TOOL_NAME,
             data=response_data,
-            request_id=resolved_request_id,
-            started_at=started_at,
+            request_id=service_call.request_id,
+            started_at=service_call.started_at,
         )
     except AddControllerDeviceValidationError as exc:
         LOGGER.warning(
             "add_controller_device validation failed",
-            extra={
-                "tool": TOOL_NAME,
-                "request_id": resolved_request_id,
-                "project_path": request.get("project_path"),
-                "device_name": request.get("device_name"),
-                "device_type": request.get("device_type"),
-                "status": "failed",
-                "error_code": exc.code,
-            },
+            extra=build_log_extra(
+                tool_name=TOOL_NAME,
+                request_id=service_call.request_id,
+                status="failed",
+                error_code=exc.code,
+                project_path=request.get("project_path"),
+                device_name=request.get("device_name"),
+                device_type=request.get("device_type"),
+            ),
         )
-        return _error_response(
+        return error_response(
+            tool_name=TOOL_NAME,
             code=exc.code,
             message=exc.message,
             details=exc.details,
-            request_id=resolved_request_id,
-            started_at=started_at,
+            request_id=service_call.request_id,
+            started_at=service_call.started_at,
         )
     except FileNotFoundError:
         LOGGER.warning(
             "add_controller_device target project was not found",
-            extra={
-                "tool": TOOL_NAME,
-                "request_id": resolved_request_id,
-                "project_path": request.get("project_path"),
-                "device_name": request.get("device_name"),
-                "status": "failed",
-                "error_code": "PROJECT_NOT_FOUND",
-            },
+            extra=build_log_extra(
+                tool_name=TOOL_NAME,
+                request_id=service_call.request_id,
+                status="failed",
+                error_code="PROJECT_NOT_FOUND",
+                project_path=request.get("project_path"),
+                device_name=request.get("device_name"),
+            ),
         )
-        return _error_response(
+        return error_response(
+            tool_name=TOOL_NAME,
             code="PROJECT_NOT_FOUND",
             message="Project file was not found.",
             details={"project_path": request.get("project_path")},
-            request_id=resolved_request_id,
-            started_at=started_at,
+            request_id=service_call.request_id,
+            started_at=service_call.started_at,
         )
     except LookupError as exc:
         LOGGER.warning(
             "add_controller_device could not resolve device metadata",
-            extra={
-                "tool": TOOL_NAME,
-                "request_id": resolved_request_id,
-                "project_path": request.get("project_path"),
-                "device_name": request.get("device_name"),
-                "device_type": request.get("device_type"),
-                "status": "failed",
-                "error_code": "DEVICE_TYPE_NOT_FOUND",
-            },
+            extra=build_log_extra(
+                tool_name=TOOL_NAME,
+                request_id=service_call.request_id,
+                status="failed",
+                error_code="DEVICE_TYPE_NOT_FOUND",
+                project_path=request.get("project_path"),
+                device_name=request.get("device_name"),
+                device_type=request.get("device_type"),
+            ),
         )
-        return _error_response(
+        return error_response(
+            tool_name=TOOL_NAME,
             code="DEVICE_TYPE_NOT_FOUND",
             message="Controller device metadata could not be resolved.",
             details={
@@ -161,28 +163,29 @@ def add_controller_device(
                 "device_version": request.get("device_version"),
                 "exception": str(exc),
             },
-            request_id=resolved_request_id,
-            started_at=started_at,
+            request_id=service_call.request_id,
+            started_at=service_call.started_at,
         )
     except Exception as exc:  # pragma: no cover - adapter safety net
         LOGGER.exception(
             "add_controller_device failed with unexpected error",
-            extra={
-                "tool": TOOL_NAME,
-                "request_id": resolved_request_id,
-                "project_path": request.get("project_path"),
-                "device_name": request.get("device_name"),
-                "device_type": request.get("device_type"),
-                "status": "failed",
-                "error_code": "DEVICE_INSERT_FAILED",
-            },
+            extra=build_log_extra(
+                tool_name=TOOL_NAME,
+                request_id=service_call.request_id,
+                status="failed",
+                error_code="DEVICE_INSERT_FAILED",
+                project_path=request.get("project_path"),
+                device_name=request.get("device_name"),
+                device_type=request.get("device_type"),
+            ),
         )
-        return _error_response(
+        return error_response(
+            tool_name=TOOL_NAME,
             code="DEVICE_INSERT_FAILED",
             message="Unexpected error while adding controller device.",
             details={"exception": str(exc)},
-            request_id=resolved_request_id,
-            started_at=started_at,
+            request_id=service_call.request_id,
+            started_at=service_call.started_at,
         )
 
 
@@ -248,46 +251,3 @@ def _validate_request(request: dict[str, Any]) -> AddControllerDeviceRequest:
 
 def _is_valid_device_type(value: Any) -> bool:
     return isinstance(value, int) or (isinstance(value, str) and bool(value.strip()))
-
-
-def _success_response(
-    data: dict[str, Any],
-    request_id: str,
-    started_at: float,
-) -> dict[str, Any]:
-    return {
-        "ok": True,
-        "tool": TOOL_NAME,
-        "data": data,
-        "error": None,
-        "meta": _build_meta(request_id=request_id, started_at=started_at),
-    }
-
-
-def _error_response(
-    code: str,
-    message: str,
-    details: dict[str, Any],
-    request_id: str,
-    started_at: float,
-) -> dict[str, Any]:
-    return {
-        "ok": False,
-        "tool": TOOL_NAME,
-        "data": None,
-        "error": {
-            "code": code,
-            "message": message,
-            "details": details,
-        },
-        "meta": _build_meta(request_id=request_id, started_at=started_at),
-    }
-
-
-def _build_meta(request_id: str, started_at: float) -> dict[str, Any]:
-    return {
-        "timestamp": datetime.now().astimezone().isoformat(timespec="seconds"),
-        "request_id": request_id,
-        "duration_ms": round((time.perf_counter() - started_at) * 1000),
-    }
-

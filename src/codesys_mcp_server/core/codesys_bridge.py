@@ -115,10 +115,19 @@ def _get_text_document(target_object, document_kind):
 def _describe_children(parent):
     children = []
     for child in parent.get_children(False):
+        try:
+            grand_children = child.get_children(False)
+            can_browse = True
+            child_count = len(list(grand_children))
+        except Exception:
+            can_browse = False
+            child_count = 0
         children.append(
             {
                 "name": _get_object_name(child),
                 "is_folder": bool(getattr(child, "is_folder", False)),
+                "can_browse": can_browse,
+                "child_count": child_count,
             }
         )
     return children

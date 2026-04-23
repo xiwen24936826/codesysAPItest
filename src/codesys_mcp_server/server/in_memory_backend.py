@@ -217,7 +217,7 @@ class InMemoryCodesysBackend:
                 "project_path": project_path,
                 "container_path": "/",
                 "children": [
-                    {"name": name, "is_folder": True}
+                    {"name": name, "is_folder": True, "can_browse": True, "child_count": len(project.root_objects[name])}
                     for name in project.root_objects.keys()
                 ],
             }
@@ -227,7 +227,7 @@ class InMemoryCodesysBackend:
                 "project_path": project_path,
                 "container_path": normalized,
                 "children": [
-                    {"name": name, "is_folder": False}
+                    {"name": name, "is_folder": False, "can_browse": False, "child_count": 0}
                     for name in project.root_objects[normalized].keys()
                 ],
             }

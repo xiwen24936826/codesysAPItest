@@ -15,6 +15,15 @@ For new POU creation work, prefer the explicit scan-first workflow:
 The server still keeps automatic `Application` fallback logic for `/` and
 `Application`, but that fallback is now a safety net rather than the primary path.
 
+When scanning the project tree, prefer `can_browse` over `is_folder`.
+
+- `can_browse: true` means the client should treat the node as a browsable
+  container and may call `list_project_objects` on its `path`.
+- `is_folder` is still returned for compatibility, but it is not reliable enough
+  on its own for real SP20 device-tree traversal.
+- `child_count` is advisory. It helps prioritize likely containers, but clients
+  should still rely on `can_browse` for recursion decisions.
+
 Current write-path guardrails:
 
 1. `replace_text_document`, `append_text_document`, and `insert_text_document`

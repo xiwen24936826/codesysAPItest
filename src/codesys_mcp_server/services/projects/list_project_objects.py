@@ -3,12 +3,11 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from datetime import datetime
 import logging
 from pathlib import Path
-import time
 from typing import Any, Protocol
-from uuid import uuid4
+
+from .._service_common import begin_service_call, build_log_extra, error_response, success_response
 
 
 LOGGER = logging.getLogger(__name__)
@@ -52,8 +51,7 @@ def list_project_objects(
     request_id: str | None = None,
 ) -> dict[str, Any]:
     """List child objects below a project-tree container."""
-    started_at = time.perf_counter()
-    resolved_request_id = request_id or str(uuid4())
+    service_call = begin_service_call(request_id)
 
     try:
         validated_request = _validate_request(request)
@@ -69,75 +67,102 @@ def list_project_objects(
 
         LOGGER.info(
             "list_project_objects succeeded",
-            extra={
-                "tool": TOOL_NAME,
-                "request_id": resolved_request_id,
-                "project_path": validated_request.project_path,
-                "container_path": response_data["container_path"],
-                "status": "success",
-            },
+            extra=build_log_extra(
+                tool_name=TOOL_NAME,
+                request_id=service_call.request_id,
+                status="success",
+                project_path=validated_request.project_path,
+                container_path=response_data["container_path"],
+            ),
         )
-        return _success_response(
+        return success_response(
+            tool_name=TOOL_NAME,
             data=response_data,
-            request_id=resolved_request_id,
-            started_at=started_at,
+            request_id=service_call.request_id,
+            started_at=service_call.started_at,
         )
     except ListProjectObjectsValidationError as exc:
         LOGGER.warning(
             "list_project_objects validation failed",
-            extra={
-                "tool": TOOL_NAME,
-                "request_id": resolved_request_id,
-                "project_path": request.get("project_path"),
-                "container_path": request.get("container_path"),
-                "status": "failed",
-                "error_code": exc.code,
-            },
+            extra=build_log_extra(
+                tool_name=TOOL_NAME,
+                request_id=service_call.request_id,
+                status="failed",
+                error_code=exc.code,
+                project_path=request.get("project_path"),
+                container_path=request.get("container_path"),
+            ),
         )
-        return _error_response(
+        return error_response(
+            tool_name=TOOL_NAME,
             code=exc.code,
             message=exc.message,
             details=exc.details,
-            request_id=resolved_request_id,
-            started_at=started_at,
+            request_id=service_call.request_id,
+            started_at=service_call.started_at,
         )
     except FileNotFoundError:
-        return _error_response(
+        LOGGER.warning(
+            "list_project_objects target project was not found",
+            extra=build_log_extra(
+                tool_name=TOOL_NAME,
+                request_id=service_call.request_id,
+                status="failed",
+                error_code="PROJECT_NOT_FOUND",
+                project_path=request.get("project_path"),
+                container_path=request.get("container_path"),
+            ),
+        )
+        return error_response(
+            tool_name=TOOL_NAME,
             code="PROJECT_NOT_FOUND",
             message="Project file was not found.",
             details={"project_path": request.get("project_path")},
-            request_id=resolved_request_id,
-            started_at=started_at,
+            request_id=service_call.request_id,
+            started_at=service_call.started_at,
         )
     except LookupError as exc:
-        return _error_response(
+        LOGGER.warning(
+            "list_project_objects could not resolve container",
+            extra=build_log_extra(
+                tool_name=TOOL_NAME,
+                request_id=service_call.request_id,
+                status="failed",
+                error_code="CONTAINER_NOT_FOUND",
+                project_path=request.get("project_path"),
+                container_path=request.get("container_path", "/"),
+            ),
+        )
+        return error_response(
+            tool_name=TOOL_NAME,
             code="CONTAINER_NOT_FOUND",
             message="Project container could not be resolved.",
             details={
                 "container_path": request.get("container_path", "/"),
                 "exception": str(exc),
             },
-            request_id=resolved_request_id,
-            started_at=started_at,
+            request_id=service_call.request_id,
+            started_at=service_call.started_at,
         )
     except Exception as exc:  # pragma: no cover - adapter safety net
         LOGGER.exception(
             "list_project_objects failed with unexpected error",
-            extra={
-                "tool": TOOL_NAME,
-                "request_id": resolved_request_id,
-                "project_path": request.get("project_path"),
-                "container_path": request.get("container_path"),
-                "status": "failed",
-                "error_code": "INTERNAL_ERROR",
-            },
+            extra=build_log_extra(
+                tool_name=TOOL_NAME,
+                request_id=service_call.request_id,
+                status="failed",
+                error_code="INTERNAL_ERROR",
+                project_path=request.get("project_path"),
+                container_path=request.get("container_path"),
+            ),
         )
-        return _error_response(
+        return error_response(
+            tool_name=TOOL_NAME,
             code="INTERNAL_ERROR",
             message="Unexpected error while listing project objects.",
             details={"exception": str(exc)},
-            request_id=resolved_request_id,
-            started_at=started_at,
+            request_id=service_call.request_id,
+            started_at=service_call.started_at,
         )
 
 
@@ -196,7 +221,10 @@ def _normalize_listing(
             "name": name,
             "path": child.get("path") or _join_container_path(resolved_container_path, name),
             "is_folder": bool(child.get("is_folder", False)),
+            "can_browse": bool(child.get("can_browse", child.get("is_folder", False))),
         }
+        if "child_count" in child:
+            normalized_child["child_count"] = child["child_count"]
         if "object_type" in child:
             normalized_child["object_type"] = child["object_type"]
         children.append(normalized_child)
@@ -213,45 +241,3 @@ def _join_container_path(parent_path: str, child_name: str) -> str:
     if not normalized_parent:
         return child_name
     return "%s/%s" % (normalized_parent, child_name)
-
-
-def _success_response(
-    data: dict[str, Any],
-    request_id: str,
-    started_at: float,
-) -> dict[str, Any]:
-    return {
-        "ok": True,
-        "tool": TOOL_NAME,
-        "data": data,
-        "error": None,
-        "meta": _build_meta(request_id=request_id, started_at=started_at),
-    }
-
-
-def _error_response(
-    code: str,
-    message: str,
-    details: dict[str, Any],
-    request_id: str,
-    started_at: float,
-) -> dict[str, Any]:
-    return {
-        "ok": False,
-        "tool": TOOL_NAME,
-        "data": None,
-        "error": {
-            "code": code,
-            "message": message,
-            "details": details,
-        },
-        "meta": _build_meta(request_id=request_id, started_at=started_at),
-    }
-
-
-def _build_meta(request_id: str, started_at: float) -> dict[str, Any]:
-    return {
-        "timestamp": datetime.now().astimezone().isoformat(timespec="seconds"),
-        "request_id": request_id,
-        "duration_ms": round((time.perf_counter() - started_at) * 1000),
-    }
