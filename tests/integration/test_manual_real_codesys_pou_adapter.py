@@ -4,9 +4,7 @@ from __future__ import annotations
 
 import os
 from pathlib import Path
-import shutil
 import sys
-import tempfile
 import unittest
 from uuid import uuid4
 
@@ -28,7 +26,7 @@ from codesys_mcp_server.services.pous import (
 )
 
 
-MANUAL_PROJECT_PATH = os.environ.get("CODESYS_MANUAL_PROJECT_PATH")
+MANUAL_PROJECT_PATH = os.environ.get("D:\\工作资料\\test\\test_pou_create.project")
 
 
 @unittest.skipUnless(
@@ -43,41 +41,10 @@ class ManualRealCodesysPouAdapterTests(unittest.TestCase):
         self._adapter = CodesysProjectAdapter.from_discovery(
             bridge_script_path=str(bridge_script)
         )
-        self._source_project_path = Path(MANUAL_PROJECT_PATH).resolve()
-        self._temp_root = Path(tempfile.gettempdir())
-        self._project_copy_path = self._temp_root / (
-            "manual_pou_test_%s.project" % uuid4().hex
-        )
-        shutil.copy2(self._source_project_path, self._project_copy_path)
-        self._project_path = str(self._project_copy_path)
-
-    def tearDown(self) -> None:
-        for path in (
-            self._project_copy_path,
-            self._project_copy_path.with_suffix(".project.precompilecache"),
-            self._project_copy_path.with_suffix(".precompilecache"),
-        ):
-            try:
-                path.unlink(missing_ok=True)
-            except OSError:
-                pass
-
-    def _resolve_test_container_path(self) -> str:
-        root_listing = self._adapter.list_objects(
-            project_path=self._project_path,
-            container_path="/",
-        )
-        child_names = {child["name"] for child in root_listing["children"]}
-        print("ROOT_CHILDREN:", sorted(child_names))
-        if "Application" in child_names:
-            print("SELECTED_CONTAINER: Application")
-            return "Application"
-        print("SELECTED_CONTAINER: /")
-        return "/"
+        self._project_path = str(Path(MANUAL_PROJECT_PATH).resolve())
 
     def test_manual_project_supports_pou_create_and_text_updates(self) -> None:
         program_name = "AutoProgram_%s" % uuid4().hex[:8]
-        container_path = self._resolve_test_container_path()
 
         open_response = open_project(
             request={"project_path": self._project_path},
@@ -89,7 +56,7 @@ class ManualRealCodesysPouAdapterTests(unittest.TestCase):
         create_response = create_program(
             request={
                 "project_path": self._project_path,
-                "container_path": container_path,
+                "container_path": "Application",
                 "name": program_name,
                 "language": "ST",
             },
@@ -101,7 +68,7 @@ class ManualRealCodesysPouAdapterTests(unittest.TestCase):
         replace_response = replace_text_document(
             request={
                 "project_path": self._project_path,
-                "container_path": container_path,
+                "container_path": "Application",
                 "object_name": program_name,
                 "document_kind": "implementation",
                 "new_text": "Counter := 1;",
@@ -114,7 +81,7 @@ class ManualRealCodesysPouAdapterTests(unittest.TestCase):
         append_response = append_text_document(
             request={
                 "project_path": self._project_path,
-                "container_path": container_path,
+                "container_path": "Application",
                 "object_name": program_name,
                 "document_kind": "implementation",
                 "text_to_append": "\nCounter := Counter + 1;",
@@ -127,7 +94,7 @@ class ManualRealCodesysPouAdapterTests(unittest.TestCase):
         insert_response = insert_text_document(
             request={
                 "project_path": self._project_path,
-                "container_path": container_path,
+                "container_path": "Application",
                 "object_name": program_name,
                 "document_kind": "implementation",
                 "text_to_insert": "// inserted by Codex\n",
@@ -141,7 +108,7 @@ class ManualRealCodesysPouAdapterTests(unittest.TestCase):
         read_response = read_textual_implementation(
             request={
                 "project_path": self._project_path,
-                "container_path": container_path,
+                "container_path": "Application",
                 "object_name": program_name,
             },
             text_document_reader=self._adapter,

@@ -1,6 +1,6 @@
 # Claude Code Connection
 
-更新时间：2026-04-22
+更新时间：2026-04-23
 
 本文档固定 Claude Code 作为客户端时的连接方式。
 
@@ -19,6 +19,15 @@
 该配置会启动：
 
 - [start_mcp_server.ps1](D:\工作资料\codesysAPItest\scripts\start_mcp_server.ps1)
+
+当前仓库还应配合使用：
+
+- `.claude/settings.json`
+
+它用于：
+
+- 预先允许 `mcp__codesys-sp20`
+- 允许 Claude Code 访问真实项目目录，例如 `D:\test`
 
 ## 2. 配置内容
 
@@ -60,7 +69,39 @@ claude mcp add-json --scope project codesys-sp20 "{\"type\":\"stdio\",\"command\
 
 如果你已经保留了仓库里的 `.mcp.json`，通常优先方式一就够了。
 
-## 4. 连接后应该看到什么
+## 4. 最小操作说明
+
+如果你只想用最少步骤开始联调，按下面做：
+
+1. 把真实项目放到纯英文或 ASCII 路径下  
+   推荐：
+   - `D:\test\test_pou_create.project`
+
+2. 确认仓库里已经有：
+   - [.mcp.json](D:\工作资料\codesysAPItest\.mcp.json)
+   - [settings.json](D:\工作资料\codesysAPItest\.claude\settings.json)
+
+3. 用 Claude Code 打开仓库目录：
+   - `D:\工作资料\codesysAPItest`
+
+4. 在 Claude Code 里确认 `codesys-sp20` 已连接  
+   预期状态：
+   - MCP server 状态为 `Connected`
+
+5. 直接发送自然语言请求，例如：
+
+```text
+在项目 D:\test\test_pou_create.project 中创建一个 ST 程序，名称为 DemoMain，并在实现区写入一行注释和一行赋值。
+```
+
+6. 如果 Claude Code 仍然尝试访问别的目录或弹权限提示：
+   - 先检查 `.claude/settings.json` 是否已包含：
+     - `mcp__codesys-sp20`
+     - `D:\test`
+
+这就是当前阶段最小可用流程。
+
+## 5. 连接后应该看到什么
 
 连接成功后，Claude Code 应该能发现当前阶段的 MCP tools，例如：
 
@@ -74,12 +115,13 @@ claude mcp add-json --scope project codesys-sp20 "{\"type\":\"stdio\",\"command\
 - `append_text_document`
 - `insert_text_document`
 
-## 5. 当前推荐使用边界
+## 6. 当前推荐使用边界
 
 当前最稳妥的真实使用方式仍然是：
 
 - 用户先手工准备 SP20 真实项目
 - 在自然语言里明确给出绝对路径 `project_path`
+- 真实项目路径优先使用纯英文或 ASCII 路径
 - Claude Code 通过 MCP tools 操作 POU
 
 当前第一阶段不建议默认依赖：
@@ -88,12 +130,12 @@ claude mcp add-json --scope project codesys-sp20 "{\"type\":\"stdio\",\"command\
 - 自动插入控制器
 - EtherCAT 扫描
 
-## 6. 推荐的第一条验证指令
+## 7. 推荐的第一条验证指令
 
 连接成功后，可以先让 Claude Code 执行类似请求：
 
 ```text
-在项目 D:\工作资料\test\test_pou_create.project 中创建一个 ST 程序，名称为 DemoMain，并在实现区写入初始化代码。
+在项目 D:\test\test_pou_create.project 中创建一个 ST 程序，名称为 DemoMain，并在实现区写入初始化代码。
 ```
 
 如果这条链路成功，说明：

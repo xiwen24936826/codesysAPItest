@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "allow": [
+      "mcp__codesys-sp20"
+    ],
+    "defaultMode": "default"
+  },
+  "additionalDirectories": [
+    "D:\\test"
+  ]
+}
