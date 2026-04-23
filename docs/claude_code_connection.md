@@ -1,5 +1,19 @@
 # Claude Code Connection
 
+## 2026-04-23 Note
+
+Claude Code should now prefer this tool order when creating or editing POU objects:
+
+1. `open_project`
+2. `list_project_objects`
+3. select the returned nested `Application` path
+4. create the target POU
+5. read or write declaration and implementation text
+
+The service layer still accepts `/` or `Application` and tries to auto-resolve the
+real nested container, but the explicit scan-first workflow is now the recommended
+path for reliable demos and client integrations.
+
 更新时间：2026-04-23
 
 本文档固定 Claude Code 作为客户端时的连接方式。

@@ -58,6 +58,19 @@ class FakeBackend:
     def replace_text_document(self, *args, **kwargs) -> None: return None
     def append_text_document(self, *args, **kwargs) -> None: return None
     def insert_text_document(self, *args, **kwargs) -> None: return None
+    def list_objects(self, project_path: str, container_path: str = "/") -> dict[str, object]:
+        self.calls.append(
+            {
+                "tool": "list_project_objects",
+                "project_path": project_path,
+                "container_path": container_path,
+            }
+        )
+        return {
+            "project_path": project_path,
+            "container_path": container_path,
+            "children": [{"name": "Application", "is_folder": True}],
+        }
 
 
 class ServerApplicationTests(unittest.TestCase):
@@ -65,6 +78,7 @@ class ServerApplicationTests(unittest.TestCase):
         app = create_server_application(FakeBackend())
         names = [tool.name for tool in app.list_tools()]
         self.assertIn("create_program", names)
+        self.assertIn("list_project_objects", names)
         self.assertIn("read_textual_implementation", names)
 
     def test_call_tool_dispatches_to_service_handler(self) -> None:
@@ -81,4 +95,18 @@ class ServerApplicationTests(unittest.TestCase):
         )
         self.assertTrue(result.ok)
         self.assertEqual(result.payload["meta"]["request_id"], "server-001")
-        self.assertEqual(backend.calls[0]["tool"], "create_program")
+        self.assertEqual(backend.calls[0]["tool"], "list_project_objects")
+        self.assertEqual(backend.calls[-1]["tool"], "create_program")
+
+    def test_call_tool_dispatches_project_scan(self) -> None:
+        backend = FakeBackend()
+        app = create_server_application(backend)
+        result = app.call_tool(
+            name="list_project_objects",
+            arguments={"project_path": "D:/Projects/demo.project"},
+            request_id="server-002",
+        )
+        self.assertTrue(result.ok)
+        self.assertEqual(result.payload["data"]["children"][0]["name"], "Application")
+        self.assertEqual(result.payload["meta"]["request_id"], "server-002")
+        self.assertEqual(backend.calls[0]["tool"], "list_project_objects")

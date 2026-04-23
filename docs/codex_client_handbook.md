@@ -2,6 +2,31 @@
 
 本手册用于指导 Codex 作为 MCP 客户端连接本项目时，如何理解自然语言、如何拆解任务，以及哪些能力当前可靠。
 
+## 2026-04-23 Note
+
+For new POU creation work, prefer the explicit scan-first workflow:
+
+1. `open_project`
+2. `list_project_objects`
+3. choose the real nested `Application` container from the returned tree
+4. `create_program` / `create_function_block` / `create_function`
+5. declaration and implementation read or write tools
+
+The server still keeps automatic `Application` fallback logic for `/` and
+`Application`, but that fallback is now a safety net rather than the primary path.
+
+Current write-path guardrails:
+
+1. `replace_text_document`, `append_text_document`, and `insert_text_document`
+   now read the resulting document back after write and fail if the round-trip
+   text does not match the expected content.
+2. implementation writes can now fail with `POU_SOURCE_VALIDATION_FAILED` if the
+   generated code references identifiers that are missing from the declaration.
+3. declaration writes can now fail with `POU_SOURCE_VALIDATION_FAILED` if they
+   would break the current implementation.
+4. non-ASCII source text is still rejected on the real IDE path until UTF-8
+   round-trip validation is proven stable there.
+
 ## 1. 当前可靠能力
 
 优先使用以下工具：

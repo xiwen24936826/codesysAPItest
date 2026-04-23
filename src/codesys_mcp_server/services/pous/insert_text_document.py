@@ -10,6 +10,8 @@ from uuid import uuid4
 
 from ._common import (
     error_response,
+    raise_validation_error,
+    read_document_text,
     require_absolute_path,
     require_ascii_text,
     require_document_kind,
@@ -17,6 +19,8 @@ from ._common import (
     require_non_negative_int,
     resolve_effective_container_path,
     success_response,
+    validate_declaration_implementation_consistency,
+    verify_roundtrip_text,
 )
 
 
@@ -37,6 +41,15 @@ class TextDocumentInserter(Protocol):
         insertion_offset: int,
     ) -> Any:
         """Insert text into the target document."""
+
+    def read_text_document(
+        self,
+        project_path: str,
+        container_path: str,
+        object_name: str,
+        document_kind: str,
+    ) -> Any:
+        """Read a textual document in the target project."""
 
 
 @dataclass(frozen=True)
@@ -79,6 +92,54 @@ def insert_text_document(
             project_path=validated_request.project_path,
             requested_container_path=validated_request.container_path,
         )
+        current_text = read_document_text(
+            adapter=text_document_inserter,
+            project_path=validated_request.project_path,
+            container_path=resolved_container_path,
+            object_name=validated_request.object_name,
+            document_kind=validated_request.document_kind,
+        )
+        if validated_request.insertion_offset > len(current_text):
+            raise_validation_error(
+                error_cls=InsertTextDocumentValidationError,
+                message="Field 'insertion_offset' must not exceed the current document length.",
+                details={
+                    "field": "insertion_offset",
+                    "value": validated_request.insertion_offset,
+                    "document_length": len(current_text),
+                },
+            )
+        expected_text = (
+            current_text[: validated_request.insertion_offset]
+            + validated_request.text_to_insert
+            + current_text[validated_request.insertion_offset :]
+        )
+        if validated_request.document_kind == "declaration":
+            current_implementation = read_document_text(
+                adapter=text_document_inserter,
+                project_path=validated_request.project_path,
+                container_path=resolved_container_path,
+                object_name=validated_request.object_name,
+                document_kind="implementation",
+            )
+            validate_declaration_implementation_consistency(
+                declaration_text=expected_text,
+                implementation_text=current_implementation,
+                error_cls=InsertTextDocumentValidationError,
+            )
+        else:
+            current_declaration = read_document_text(
+                adapter=text_document_inserter,
+                project_path=validated_request.project_path,
+                container_path=resolved_container_path,
+                object_name=validated_request.object_name,
+                document_kind="declaration",
+            )
+            validate_declaration_implementation_consistency(
+                declaration_text=current_declaration,
+                implementation_text=expected_text,
+                error_cls=InsertTextDocumentValidationError,
+            )
         text_document_inserter.insert_text_document(
             project_path=validated_request.project_path,
             container_path=resolved_container_path,
@@ -86,6 +147,15 @@ def insert_text_document(
             document_kind=validated_request.document_kind,
             text_to_insert=validated_request.text_to_insert,
             insertion_offset=validated_request.insertion_offset,
+        )
+        verify_roundtrip_text(
+            adapter=text_document_inserter,
+            project_path=validated_request.project_path,
+            container_path=resolved_container_path,
+            object_name=validated_request.object_name,
+            document_kind=validated_request.document_kind,
+            expected_text=expected_text,
+            error_cls=InsertTextDocumentValidationError,
         )
 
         response_data = {
@@ -96,6 +166,7 @@ def insert_text_document(
             "updated": True,
             "inserted_length": len(validated_request.text_to_insert),
             "insertion_offset": validated_request.insertion_offset,
+            "roundtrip_verified": True,
         }
         return success_response(
             tool_name=TOOL_NAME,

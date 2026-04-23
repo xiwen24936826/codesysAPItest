@@ -10,12 +10,15 @@ from uuid import uuid4
 
 from ._common import (
     error_response,
+    read_document_text,
     require_absolute_path,
     require_ascii_text,
     require_document_kind,
     require_non_empty_string,
     resolve_effective_container_path,
     success_response,
+    validate_declaration_implementation_consistency,
+    verify_roundtrip_text,
 )
 
 
@@ -35,6 +38,15 @@ class TextDocumentAppender(Protocol):
         text_to_append: str,
     ) -> Any:
         """Append text to the target document."""
+
+    def read_text_document(
+        self,
+        project_path: str,
+        container_path: str,
+        object_name: str,
+        document_kind: str,
+    ) -> Any:
+        """Read a textual document in the target project."""
 
 
 @dataclass(frozen=True)
@@ -76,12 +88,55 @@ def append_text_document(
             project_path=validated_request.project_path,
             requested_container_path=validated_request.container_path,
         )
+        current_text = read_document_text(
+            adapter=text_document_appender,
+            project_path=validated_request.project_path,
+            container_path=resolved_container_path,
+            object_name=validated_request.object_name,
+            document_kind=validated_request.document_kind,
+        )
+        expected_text = current_text + validated_request.text_to_append
+        if validated_request.document_kind == "declaration":
+            current_implementation = read_document_text(
+                adapter=text_document_appender,
+                project_path=validated_request.project_path,
+                container_path=resolved_container_path,
+                object_name=validated_request.object_name,
+                document_kind="implementation",
+            )
+            validate_declaration_implementation_consistency(
+                declaration_text=expected_text,
+                implementation_text=current_implementation,
+                error_cls=AppendTextDocumentValidationError,
+            )
+        else:
+            current_declaration = read_document_text(
+                adapter=text_document_appender,
+                project_path=validated_request.project_path,
+                container_path=resolved_container_path,
+                object_name=validated_request.object_name,
+                document_kind="declaration",
+            )
+            validate_declaration_implementation_consistency(
+                declaration_text=current_declaration,
+                implementation_text=expected_text,
+                error_cls=AppendTextDocumentValidationError,
+            )
         text_document_appender.append_text_document(
             project_path=validated_request.project_path,
             container_path=resolved_container_path,
             object_name=validated_request.object_name,
             document_kind=validated_request.document_kind,
             text_to_append=validated_request.text_to_append,
+        )
+        verify_roundtrip_text(
+            adapter=text_document_appender,
+            project_path=validated_request.project_path,
+            container_path=resolved_container_path,
+            object_name=validated_request.object_name,
+            document_kind=validated_request.document_kind,
+            expected_text=expected_text,
+            error_cls=AppendTextDocumentValidationError,
         )
 
         response_data = {
@@ -91,6 +146,7 @@ def append_text_document(
             "document_kind": validated_request.document_kind,
             "updated": True,
             "appended_length": len(validated_request.text_to_append),
+            "roundtrip_verified": True,
         }
         return success_response(
             tool_name=TOOL_NAME,

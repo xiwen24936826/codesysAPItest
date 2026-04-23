@@ -10,12 +10,15 @@ from uuid import uuid4
 
 from ._common import (
     error_response,
+    read_document_text,
     require_absolute_path,
     require_ascii_text,
     require_document_kind,
     require_non_empty_string,
     resolve_effective_container_path,
     success_response,
+    validate_declaration_implementation_consistency,
+    verify_roundtrip_text,
 )
 
 
@@ -35,6 +38,15 @@ class TextDocumentReplacer(Protocol):
         new_text: str,
     ) -> Any:
         """Replace a textual document in the target project."""
+
+    def read_text_document(
+        self,
+        project_path: str,
+        container_path: str,
+        object_name: str,
+        document_kind: str,
+    ) -> Any:
+        """Read a textual document in the target project."""
 
 
 @dataclass(frozen=True)
@@ -76,12 +88,48 @@ def replace_text_document(
             project_path=validated_request.project_path,
             requested_container_path=validated_request.container_path,
         )
+        if validated_request.document_kind == "declaration":
+            candidate_declaration = validated_request.new_text
+            current_implementation = read_document_text(
+                adapter=text_document_replacer,
+                project_path=validated_request.project_path,
+                container_path=resolved_container_path,
+                object_name=validated_request.object_name,
+                document_kind="implementation",
+            )
+            validate_declaration_implementation_consistency(
+                declaration_text=candidate_declaration,
+                implementation_text=current_implementation,
+                error_cls=ReplaceTextDocumentValidationError,
+            )
+        else:
+            current_declaration = read_document_text(
+                adapter=text_document_replacer,
+                project_path=validated_request.project_path,
+                container_path=resolved_container_path,
+                object_name=validated_request.object_name,
+                document_kind="declaration",
+            )
+            validate_declaration_implementation_consistency(
+                declaration_text=current_declaration,
+                implementation_text=validated_request.new_text,
+                error_cls=ReplaceTextDocumentValidationError,
+            )
         text_document_replacer.replace_text_document(
             project_path=validated_request.project_path,
             container_path=resolved_container_path,
             object_name=validated_request.object_name,
             document_kind=validated_request.document_kind,
             new_text=validated_request.new_text,
+        )
+        verify_roundtrip_text(
+            adapter=text_document_replacer,
+            project_path=validated_request.project_path,
+            container_path=resolved_container_path,
+            object_name=validated_request.object_name,
+            document_kind=validated_request.document_kind,
+            expected_text=validated_request.new_text,
+            error_cls=ReplaceTextDocumentValidationError,
         )
 
         response_data = {
@@ -91,6 +139,7 @@ def replace_text_document(
             "document_kind": validated_request.document_kind,
             "updated": True,
             "text_length": len(validated_request.new_text),
+            "roundtrip_verified": True,
         }
         return success_response(
             tool_name=TOOL_NAME,

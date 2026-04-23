@@ -1,6 +1,6 @@
 # Current Phase Plan
 
-Updated: 2026-04-22
+Updated: 2026-04-23
 
 This document records the current working plan so future sessions do not depend on chat context alone.
 
@@ -21,11 +21,12 @@ Primary implementation scope:
 1. `create_program`
 2. `create_function_block`
 3. `create_function`
-4. `read_textual_declaration`
-5. `read_textual_implementation`
-6. `replace_text_document`
-7. `append_text_document`
-8. `insert_text_document`
+4. `list_project_objects`
+5. `read_textual_declaration`
+6. `read_textual_implementation`
+7. `replace_text_document`
+8. `append_text_document`
+9. `insert_text_document`
 
 Supporting but not blocking Phase 1:
 
@@ -121,6 +122,51 @@ Resume later after the automation chain is stable:
 - source projects can be locked by a running IDE session, so tests should use copied project files
 - project layouts may differ and should not assume that `Application` exists as a top-level node
 
+## 2026-04-23 Strategy Update
+
+This repository should keep the agreed solution in this existing phase-plan file
+instead of creating many new planning documents. That keeps context durable across
+chat compression while keeping documentation lookup costs low.
+
+The agreed implementation order is:
+
+1. Add an explicit project-tree scan tool so clients can inspect the real device
+   tree and nested `Application` structure before creating POU objects.
+2. Keep the current server-side automatic `Application` fallback as a safety net,
+   but treat scan-first as the recommended workflow.
+3. Add end-to-end UTF-8 handling and read-after-write validation for textual
+   document operations. Until that path is proven stable, keep the real IDE write
+   path on ASCII-only source text.
+4. Add declaration-plus-implementation source validation before writing generated
+   POU code, so undeclared identifiers are rejected before the IDE project is
+   modified.
+5. Only after the validation path is stable, consider an automated repair flow
+   that can propose or apply missing declarations.
+
+### Immediate Next Slice
+
+The next code slice should implement:
+
+1. `list_project_objects` as a first-class MCP tool
+2. tool registration and unit coverage for the new scan flow
+3. client guidance updates so the recommended call order becomes:
+   - `open_project`
+   - `list_project_objects`
+   - `create_*`
+   - text read/write tools
+
+### Implemented After This Update
+
+The repository now also enforces these write-path rules for POU source text:
+
+1. text write tools perform read-after-write round-trip verification
+2. implementation writes are rejected before save if referenced identifiers are
+   missing from the current declaration
+3. declaration writes are rejected before save if they would break the current
+   implementation
+4. current real-IDE write path still stays on ASCII-only source text until
+   end-to-end UTF-8 validation is proven stable
+
 ## Client Guidance
 
 Codex can understand natural language and decompose tasks, but it still needs repository guidance.
@@ -130,3 +176,10 @@ Current client-facing guidance should come from:
 - `docs/codex_client_handbook.md`
 - `docs/api_specs/mcp_tools_phase1.md`
 - this document
+
+Current recommended tool order for new POU work is:
+
+1. `open_project`
+2. `list_project_objects`
+3. `create_program` / `create_function_block` / `create_function`
+4. textual read or write tools

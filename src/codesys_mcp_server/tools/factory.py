@@ -17,6 +17,7 @@ from codesys_mcp_server.services.pous import (
 from codesys_mcp_server.services.projects import (
     add_controller_device,
     create_project,
+    list_project_objects,
     open_project,
     save_project,
 )
@@ -44,6 +45,16 @@ def build_tool_registry(backend: Any) -> ToolRegistry:
         lambda request, request_id=None: open_project(
             request=request,
             project_opener=backend,
+            request_id=request_id,
+        ),
+    )
+    registry.register(
+        "list_project_objects",
+        "List child objects below a logical container in the project tree.",
+        {"type": "object", "required": ["project_path"]},
+        lambda request, request_id=None: list_project_objects(
+            request=request,
+            project_object_lister=backend,
             request_id=request_id,
         ),
     )

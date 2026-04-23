@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from datetime import datetime
 from pathlib import Path
+import re
 import time
 from typing import Any
 
@@ -12,6 +13,77 @@ DEFAULT_LANGUAGE = "ST"
 VALID_DOCUMENT_KINDS = {"declaration", "implementation"}
 DEFAULT_CONTAINER_ALIASES = {"/", "Application", "/Application"}
 APPLICATION_CONTAINER_NAME = "Application"
+IDENTIFIER_PATTERN = re.compile(r"[A-Za-z_][A-Za-z0-9_]*")
+VAR_BLOCK_PATTERN = re.compile(r"\bVAR(?:_[A-Z]+)?\b(.*?)\bEND_VAR\b", re.IGNORECASE | re.DOTALL)
+ST_KEYWORDS = {
+    "AND",
+    "ARRAY",
+    "BY",
+    "CASE",
+    "CONSTANT",
+    "DO",
+    "ELSE",
+    "ELSIF",
+    "END_CASE",
+    "END_FOR",
+    "END_FUNCTION",
+    "END_FUNCTION_BLOCK",
+    "END_IF",
+    "END_METHOD",
+    "END_PROGRAM",
+    "END_REPEAT",
+    "END_VAR",
+    "END_WHILE",
+    "EXIT",
+    "FALSE",
+    "FOR",
+    "FUNCTION",
+    "FUNCTION_BLOCK",
+    "IF",
+    "MOD",
+    "NOT",
+    "OF",
+    "OR",
+    "PROGRAM",
+    "REPEAT",
+    "RETURN",
+    "THEN",
+    "TO",
+    "TRUE",
+    "UNTIL",
+    "VAR",
+    "VAR_INPUT",
+    "VAR_IN_OUT",
+    "VAR_OUTPUT",
+    "VAR_TEMP",
+    "WHILE",
+    "XOR",
+}
+IEC_TYPES = {
+    "BOOL",
+    "BYTE",
+    "DATE",
+    "DATE_AND_TIME",
+    "DINT",
+    "DWORD",
+    "INT",
+    "LDATE",
+    "LDATE_AND_TIME",
+    "LINT",
+    "LREAL",
+    "LTIME",
+    "REAL",
+    "SINT",
+    "STRING",
+    "TIME",
+    "TIME_OF_DAY",
+    "TOD",
+    "UDINT",
+    "UINT",
+    "ULINT",
+    "USINT",
+    "WORD",
+}
 
 
 def success_response(
@@ -183,6 +255,15 @@ def extract_text(result: Any) -> str:
     raise TypeError("Text document adapter returned an unsupported result.")
 
 
+def raise_validation_error(
+    error_cls: type[Exception],
+    message: str,
+    details: dict[str, Any],
+    code: str = "VALIDATION_ERROR",
+) -> None:
+    raise error_cls(message=message, details=details, code=code)
+
+
 def require_ascii_text(
     field: str,
     value: str,
@@ -202,6 +283,128 @@ def require_ascii_text(
             code="NON_ASCII_TEXT_UNSUPPORTED",
         )
     return value
+
+
+def read_document_text(
+    adapter: Any,
+    project_path: str,
+    container_path: str,
+    object_name: str,
+    document_kind: str,
+) -> str:
+    result = adapter.read_text_document(
+        project_path=project_path,
+        container_path=container_path,
+        object_name=object_name,
+        document_kind=document_kind,
+    )
+    return extract_text(result)
+
+
+def verify_roundtrip_text(
+    adapter: Any,
+    project_path: str,
+    container_path: str,
+    object_name: str,
+    document_kind: str,
+    expected_text: str,
+    error_cls: type[Exception],
+) -> str:
+    actual_text = read_document_text(
+        adapter=adapter,
+        project_path=project_path,
+        container_path=container_path,
+        object_name=object_name,
+        document_kind=document_kind,
+    )
+    if actual_text != expected_text:
+        raise_validation_error(
+            error_cls=error_cls,
+            message="Text write verification failed after round-trip readback.",
+            details={
+                "document_kind": document_kind,
+                "expected_length": len(expected_text),
+                "actual_length": len(actual_text),
+                "mismatch_index": _first_mismatch_index(expected_text, actual_text),
+            },
+            code="TEXT_ROUNDTRIP_VERIFICATION_FAILED",
+        )
+    return actual_text
+
+
+def validate_declaration_implementation_consistency(
+    declaration_text: str,
+    implementation_text: str,
+    error_cls: type[Exception],
+) -> None:
+    missing_identifiers = find_missing_declarations(
+        declaration_text=declaration_text,
+        implementation_text=implementation_text,
+    )
+    if missing_identifiers:
+        raise_validation_error(
+            error_cls=error_cls,
+            message="Implementation references identifiers that are not declared.",
+            details={"missing_identifiers": missing_identifiers},
+            code="POU_SOURCE_VALIDATION_FAILED",
+        )
+
+
+def find_missing_declarations(
+    declaration_text: str,
+    implementation_text: str,
+) -> list[str]:
+    if not implementation_text.strip():
+        return []
+
+    declared_identifiers = collect_declared_identifiers(declaration_text)
+    referenced_identifiers = collect_referenced_identifiers(implementation_text)
+    missing = sorted(identifier for identifier in referenced_identifiers if identifier not in declared_identifiers)
+    return missing
+
+
+def collect_declared_identifiers(declaration_text: str) -> set[str]:
+    identifiers: set[str] = set()
+    for match in VAR_BLOCK_PATTERN.finditer(strip_st_comments(declaration_text)):
+        block = match.group(1)
+        for raw_line in block.splitlines():
+            line = raw_line.strip()
+            if not line or ":" not in line or line.startswith("{"):
+                continue
+            left = line.split(":", 1)[0]
+            left = re.sub(r"\bAT\b.*", "", left, flags=re.IGNORECASE).strip()
+            if not left:
+                continue
+            for item in left.split(","):
+                identifier_match = IDENTIFIER_PATTERN.search(item)
+                if identifier_match:
+                    identifiers.add(identifier_match.group(0))
+    return identifiers
+
+
+def collect_referenced_identifiers(implementation_text: str) -> set[str]:
+    sanitized = strip_st_comments(implementation_text)
+    sanitized = re.sub(r"'(?:''|[^'])*'", " ", sanitized)
+
+    identifiers: set[str] = set()
+    for match in IDENTIFIER_PATTERN.finditer(sanitized):
+        identifier = match.group(0)
+        normalized = identifier.upper()
+        if normalized in ST_KEYWORDS or normalized in IEC_TYPES:
+            continue
+        if match.start() > 0 and sanitized[match.start() - 1] == ".":
+            continue
+        trailing = sanitized[match.end() :].lstrip()
+        if trailing.startswith("("):
+            continue
+        identifiers.add(identifier)
+    return identifiers
+
+
+def strip_st_comments(text: str) -> str:
+    text = re.sub(r"\(\*.*?\*\)", " ", text, flags=re.DOTALL)
+    text = re.sub(r"//.*", " ", text)
+    return text
 
 
 def resolve_effective_container_path(
@@ -264,3 +467,11 @@ def _join_container_path(parent_path: str, child_name: str) -> str:
     if parent_path in ("", "/"):
         return child_name
     return "%s/%s" % (parent_path.strip("/"), child_name)
+
+
+def _first_mismatch_index(expected_text: str, actual_text: str) -> int:
+    shared_length = min(len(expected_text), len(actual_text))
+    for index in range(shared_length):
+        if expected_text[index] != actual_text[index]:
+            return index
+    return shared_length

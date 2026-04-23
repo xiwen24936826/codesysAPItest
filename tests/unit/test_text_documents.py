@@ -22,6 +22,9 @@ from codesys_mcp_server.services.pous.read_textual_implementation import (
 from codesys_mcp_server.services.pous.replace_text_document import replace_text_document
 
 
+NESTED_APPLICATION_PATH = "MyController/PLCLogic/Application"
+
+
 class FakeTextDocumentReader:
     """Simple text reader test double."""
 
@@ -53,8 +56,8 @@ class FakeTextDocumentReader:
         if container_path == "/":
             return {"children": [{"name": "MyController", "is_folder": True}]}
         if container_path == "MyController":
-            return {"children": [{"name": "PLC逻辑", "is_folder": True}]}
-        if container_path == "MyController/PLC逻辑":
+            return {"children": [{"name": "PLCLogic", "is_folder": True}]}
+        if container_path == "MyController/PLCLogic":
             return {"children": [{"name": "Application", "is_folder": True}]}
         return {"children": []}
 
@@ -73,10 +76,47 @@ class MissingTextReader:
 
 
 class FakeTextDocumentWriter:
-    """Generic test double for text update services."""
+    """Stateful test double for text update services."""
 
     def __init__(self) -> None:
         self.calls: list[dict[str, object]] = []
+        self.declaration = "PROGRAM MainProgram\nVAR\n    Counter: INT;\nEND_VAR"
+        self.implementation = "Counter := Counter + 1;"
+
+    def list_objects(
+        self,
+        project_path: str,
+        container_path: str = "/",
+    ) -> dict[str, object]:
+        if container_path == "/":
+            return {"children": [{"name": "MyController", "is_folder": True}]}
+        if container_path == "MyController":
+            return {"children": [{"name": "PLCLogic", "is_folder": True}]}
+        if container_path == "MyController/PLCLogic":
+            return {"children": [{"name": "Application", "is_folder": True}]}
+        return {"children": []}
+
+    def read_text_document(
+        self,
+        project_path: str,
+        container_path: str,
+        object_name: str,
+        document_kind: str,
+    ) -> dict[str, str]:
+        self.calls.append(
+            {
+                "kind": "read",
+                "project_path": project_path,
+                "container_path": container_path,
+                "object_name": object_name,
+                "document_kind": document_kind,
+            }
+        )
+        if document_kind == "declaration":
+            return {"text": self.declaration}
+        if document_kind == "implementation":
+            return {"text": self.implementation}
+        raise LookupError("Unsupported document kind")
 
     def replace_text_document(
         self,
@@ -96,19 +136,10 @@ class FakeTextDocumentWriter:
                 "new_text": new_text,
             }
         )
-
-    def list_objects(
-        self,
-        project_path: str,
-        container_path: str = "/",
-    ) -> dict[str, object]:
-        if container_path == "/":
-            return {"children": [{"name": "MyController", "is_folder": True}]}
-        if container_path == "MyController":
-            return {"children": [{"name": "PLC逻辑", "is_folder": True}]}
-        if container_path == "MyController/PLC逻辑":
-            return {"children": [{"name": "Application", "is_folder": True}]}
-        return {"children": []}
+        if document_kind == "declaration":
+            self.declaration = new_text
+        else:
+            self.implementation = new_text
 
     def append_text_document(
         self,
@@ -128,6 +159,10 @@ class FakeTextDocumentWriter:
                 "text_to_append": text_to_append,
             }
         )
+        if document_kind == "declaration":
+            self.declaration += text_to_append
+        else:
+            self.implementation += text_to_append
 
     def insert_text_document(
         self,
@@ -149,6 +184,40 @@ class FakeTextDocumentWriter:
                 "insertion_offset": insertion_offset,
             }
         )
+        if document_kind == "declaration":
+            self.declaration = (
+                self.declaration[:insertion_offset]
+                + text_to_insert
+                + self.declaration[insertion_offset:]
+            )
+        else:
+            self.implementation = (
+                self.implementation[:insertion_offset]
+                + text_to_insert
+                + self.implementation[insertion_offset:]
+            )
+
+
+class CorruptingTextDocumentWriter(FakeTextDocumentWriter):
+    """Writer that simulates a broken write/read round-trip."""
+
+    def replace_text_document(
+        self,
+        project_path: str,
+        container_path: str,
+        object_name: str,
+        document_kind: str,
+        new_text: str,
+    ) -> None:
+        super().replace_text_document(
+            project_path=project_path,
+            container_path=container_path,
+            object_name=object_name,
+            document_kind=document_kind,
+            new_text=new_text,
+        )
+        if document_kind == "implementation":
+            self.implementation = self.implementation + " "
 
 
 class TextDocumentServiceTests(unittest.TestCase):
@@ -171,10 +240,7 @@ class TextDocumentServiceTests(unittest.TestCase):
         self.assertEqual(response["data"]["document_kind"], "declaration")
         self.assertEqual(response["data"]["text"], "PROGRAM MainProgram")
         self.assertEqual(reader.calls[0]["document_kind"], "declaration")
-        self.assertEqual(
-            reader.calls[0]["container_path"],
-            "MyController/PLC逻辑/Application",
-        )
+        self.assertEqual(reader.calls[0]["container_path"], NESTED_APPLICATION_PATH)
 
     def test_read_textual_implementation_reports_missing_text(self) -> None:
         response = read_textual_implementation(
@@ -207,7 +273,8 @@ class TextDocumentServiceTests(unittest.TestCase):
 
         self.assertTrue(response["ok"])
         self.assertEqual(response["data"]["text_length"], 0)
-        self.assertEqual(writer.calls[0]["new_text"], "")
+        self.assertEqual(writer.calls[1]["new_text"], "")
+        self.assertTrue(response["data"]["roundtrip_verified"])
 
     def test_append_text_document_appends_to_tail(self) -> None:
         writer = FakeTextDocumentWriter()
@@ -226,11 +293,9 @@ class TextDocumentServiceTests(unittest.TestCase):
 
         self.assertTrue(response["ok"])
         self.assertEqual(response["data"]["appended_length"], 23)
-        self.assertEqual(writer.calls[0]["kind"], "append")
-        self.assertEqual(
-            writer.calls[0]["container_path"],
-            "MyController/PLC逻辑/Application",
-        )
+        self.assertEqual(writer.calls[2]["kind"], "append")
+        self.assertEqual(writer.calls[2]["container_path"], NESTED_APPLICATION_PATH)
+        self.assertTrue(response["data"]["roundtrip_verified"])
 
     def test_insert_text_document_requires_non_negative_offset(self) -> None:
         writer = FakeTextDocumentWriter()
@@ -253,6 +318,26 @@ class TextDocumentServiceTests(unittest.TestCase):
         self.assertEqual(response["error"]["details"]["field"], "insertion_offset")
         self.assertEqual(writer.calls, [])
 
+    def test_insert_text_document_rejects_offsets_beyond_document_length(self) -> None:
+        writer = FakeTextDocumentWriter()
+
+        response = insert_text_document(
+            request={
+                "project_path": "D:/Projects/demo.project",
+                "container_path": "Application",
+                "object_name": "MainProgram",
+                "document_kind": "implementation",
+                "text_to_insert": "Start := TRUE;\n",
+                "insertion_offset": 999,
+            },
+            text_document_inserter=writer,
+            request_id="req-text-005b",
+        )
+
+        self.assertFalse(response["ok"])
+        self.assertEqual(response["error"]["code"], "VALIDATION_ERROR")
+        self.assertEqual(response["error"]["details"]["field"], "insertion_offset")
+
     def test_replace_text_document_rejects_non_ascii_text(self) -> None:
         writer = FakeTextDocumentWriter()
 
@@ -262,7 +347,7 @@ class TextDocumentServiceTests(unittest.TestCase):
                 "container_path": "Application",
                 "object_name": "MainProgram",
                 "document_kind": "implementation",
-                "new_text": "// 初始化\nx := 1;",
+                "new_text": "// init\nx := 1;\u4e2d",
             },
             text_document_replacer=writer,
             request_id="req-text-006",
@@ -281,7 +366,7 @@ class TextDocumentServiceTests(unittest.TestCase):
                 "container_path": "Application",
                 "object_name": "MainProgram",
                 "document_kind": "implementation",
-                "text_to_append": "// 初始化",
+                "text_to_append": "// init\u4e2d",
             },
             text_document_appender=writer,
             request_id="req-text-007",
@@ -290,6 +375,62 @@ class TextDocumentServiceTests(unittest.TestCase):
         self.assertFalse(response["ok"])
         self.assertEqual(response["error"]["code"], "NON_ASCII_TEXT_UNSUPPORTED")
         self.assertEqual(writer.calls, [])
+
+    def test_replace_text_document_verifies_roundtrip_after_write(self) -> None:
+        writer = CorruptingTextDocumentWriter()
+
+        response = replace_text_document(
+            request={
+                "project_path": "D:/Projects/demo.project",
+                "container_path": "Application",
+                "object_name": "MainProgram",
+                "document_kind": "implementation",
+                "new_text": "Counter := Counter + 2;",
+            },
+            text_document_replacer=writer,
+            request_id="req-text-008",
+        )
+
+        self.assertFalse(response["ok"])
+        self.assertEqual(response["error"]["code"], "TEXT_ROUNDTRIP_VERIFICATION_FAILED")
+
+    def test_replace_text_document_rejects_undeclared_identifiers(self) -> None:
+        writer = FakeTextDocumentWriter()
+
+        response = replace_text_document(
+            request={
+                "project_path": "D:/Projects/demo.project",
+                "container_path": "Application",
+                "object_name": "MainProgram",
+                "document_kind": "implementation",
+                "new_text": "Counter := MissingVar + 1;",
+            },
+            text_document_replacer=writer,
+            request_id="req-text-009",
+        )
+
+        self.assertFalse(response["ok"])
+        self.assertEqual(response["error"]["code"], "POU_SOURCE_VALIDATION_FAILED")
+        self.assertEqual(response["error"]["details"]["missing_identifiers"], ["MissingVar"])
+
+    def test_replace_declaration_rejects_breaking_current_implementation(self) -> None:
+        writer = FakeTextDocumentWriter()
+
+        response = replace_text_document(
+            request={
+                "project_path": "D:/Projects/demo.project",
+                "container_path": "Application",
+                "object_name": "MainProgram",
+                "document_kind": "declaration",
+                "new_text": "PROGRAM MainProgram\nVAR\nEND_VAR",
+            },
+            text_document_replacer=writer,
+            request_id="req-text-010",
+        )
+
+        self.assertFalse(response["ok"])
+        self.assertEqual(response["error"]["code"], "POU_SOURCE_VALIDATION_FAILED")
+        self.assertEqual(response["error"]["details"]["missing_identifiers"], ["Counter"])
 
 
 if __name__ == "__main__":
