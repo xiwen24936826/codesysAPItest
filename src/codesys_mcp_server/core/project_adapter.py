@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+import ctypes
 import json
 import os
 from pathlib import Path
@@ -70,6 +71,7 @@ class CodesysIdeRunner:
 
     def run_operation(self, payload: dict[str, Any]) -> dict[str, Any]:
         """Execute one bridge request inside the installed IDE."""
+        normalized_payload = _normalize_codesys_payload_paths(payload)
         request_file = tempfile.NamedTemporaryFile(
             mode="w",
             suffix=".json",
@@ -84,7 +86,7 @@ class CodesysIdeRunner:
         )
 
         try:
-            json.dump(payload, request_file)
+            json.dump(normalized_payload, request_file)
             request_file.close()
             response_file.close()
 
@@ -142,6 +144,10 @@ class CodesysIdeRunner:
             if not response_payload.get("ok"):
                 error = response_payload.get("error", {})
                 error_message = error.get("message", "unknown error")
+                error_message = _normalize_codesys_error_message(
+                    error_message=error_message,
+                    original_payload=payload,
+                )
                 exception_text = "CODESYS bridge operation failed: %s" % error_message
                 if (
                     "ProjectConcurrentlyInUseException" in error_message
@@ -440,3 +446,72 @@ def _find_install_location(display_name: str) -> str:
     raise FileNotFoundError(
         "Could not find installed product '%s' in registry." % display_name
     )
+
+
+def _normalize_codesys_payload_paths(payload: dict[str, Any]) -> dict[str, Any]:
+    normalized = dict(payload)
+    for key in ("project_path", "target_project_path"):
+        value = normalized.get(key)
+        if isinstance(value, str) and value.strip():
+            normalized[key] = _normalize_codesys_path(value)
+    return normalized
+
+
+def _normalize_codesys_path(path: str) -> str:
+    if _is_ascii(path):
+        return path
+
+    exact_short = _get_short_path(path)
+    if exact_short is not None:
+        return exact_short
+
+    source_path = Path(path)
+    parent_short = _get_short_path(str(source_path.parent))
+    if parent_short is not None:
+        candidate = str(Path(parent_short) / source_path.name)
+        if _is_ascii(candidate):
+            return candidate
+
+    return path
+
+
+def _get_short_path(path: str) -> str | None:
+    if os.name != "nt":
+        return None
+
+    buffer_size = 4096
+    output_buffer = ctypes.create_unicode_buffer(buffer_size)
+    result = ctypes.windll.kernel32.GetShortPathNameW(
+        path,
+        output_buffer,
+        buffer_size,
+    )
+    if result == 0:
+        return None
+    return output_buffer.value
+
+
+def _normalize_codesys_error_message(
+    error_message: str,
+    original_payload: dict[str, Any],
+) -> str:
+    project_path = original_payload.get("project_path")
+    if (
+        isinstance(project_path, str)
+        and not _is_ascii(project_path)
+        and ("????" in error_message or "\\u003f\\u003f\\u003f\\u003f" in error_message)
+    ):
+        return (
+            "The real IDE backend could not resolve the non-ASCII project path. "
+            "Move or copy the project to an ASCII-only path, or use an ASCII-only "
+            "parent directory for the project file."
+        )
+    return error_message
+
+
+def _is_ascii(value: str) -> bool:
+    try:
+        value.encode("ascii")
+    except UnicodeEncodeError:
+        return False
+    return True
