@@ -129,15 +129,18 @@ claude mcp get codesys-sp20
 
 当前已验证可用规则：
 
-- 对这个项目，创建 POU 时可用：
-  - `container_path="/" `
+- 对这个项目，创建 POU 时调用方即使传：
+  - `/`
+  - `Application`
+- 服务端现在也会优先自动解析到真实项目里的嵌套 `Application`
 
 推荐做法：
 
 1. 如果知道项目里有 `Application`
    - 用 `Application`
-2. 如果项目顶层没有 `Application`
+2. 如果不确定项目顶层结构
    - 用 `/`
+3. 让服务端自动解析真实的 `Application` 容器
 
 当前第一阶段对真实项目最稳的默认值是：
 
@@ -158,12 +161,16 @@ container_path = /
 1. 又遇到新的 MCP 工具权限请求
 2. 路径是中文路径
 3. 生成的 `container_path` 不正确
+4. 实现区用了未声明变量
+5. 实现区写入了中文注释导致乱码
 
 排查顺序：
 
 1. 先看是否弹了新的工具授权
 2. 再看项目路径是否为纯英文
 3. 再看 Claude 调用时的 `container_path` 是否是 `/` 或 `Application`
+4. 再看声明区是否真的声明了实现区里使用到的变量
+5. 再看实现区是否包含中文注释或非 ASCII 文本
 
 ## 6. Claude 想自己猜项目结构，结果越走越偏
 
@@ -192,6 +199,12 @@ container_path = /
 在项目 D:\test\test_pou_create.project 中创建一个 ST 程序，名称为 DemoMain。请直接使用可用的 MCP tools 完成，不要先用 Bash 或 Glob 探测项目。
 ```
 
+更稳的写法是：
+
+```text
+在项目 D:\test\test_pou_create.project 中创建一个 ST 程序，名称为 DemoMain。请直接使用可用的 MCP tools 完成，不要先用 Bash 或 Glob 探测项目；如果需要 container_path，请使用 /；源码和注释使用 ASCII-only；如果实现区使用到变量，先补全声明区变量。
+```
+
 ## 7. 当前最稳的最小联调方式
 
 推荐条件：
@@ -218,5 +231,10 @@ container_path = /
 1. MCP 工具未授权
 2. 项目路径含中文
 3. `container_path` 不正确
+
+当前另外两类高频问题也要注意：
+
+4. 中文注释会在真实后端写入后乱码
+5. 实现区逻辑如果引用了未声明变量，会导致预编译报错
 
 只要先解决这 3 个点，第一阶段的 POU 自然语言链路就是可用的。

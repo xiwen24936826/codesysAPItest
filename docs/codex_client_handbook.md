@@ -19,6 +19,7 @@
 ## 2. 当前前置条件
 
 - 项目文件路径必须是绝对路径。
+- 项目路径优先使用纯英文或 ASCII 路径。
 - `container_path` 是项目内逻辑路径，例如 `Application`。
 - 在第一阶段，允许用户手工在 SP20 中准备真实项目。
 - 当真实项目由用户手工准备时，Codex 不应强行先调用 `create_project`。
@@ -41,11 +42,18 @@
    - 末尾追加用 `append_text_document`
    - 指定位置插入用 `insert_text_document`
 
+补充约束：
+
+- 如果调用方传入 `/` 或 `Application`，服务端现在会优先自动解析到真实项目里的嵌套 `Application` 容器。
+- 在真实 SP20 自动化链路中，源码文本暂时应保持 ASCII-only，避免中文注释写入后乱码。
+- 写实现区之前，应先确保声明区包含实现逻辑会使用到的变量。
+
 ## 4. 文本工具语义
 
 - `replace_text_document`: 用新全文覆盖原文
 - `append_text_document`: 只在末尾追加
 - `insert_text_document`: 在指定字符偏移位置插入
+- 当前真实后端建议源码和注释使用 ASCII-only
 
 不要把 `append_text_document` 当成“任意位置插入”工具使用。
 
@@ -68,6 +76,7 @@
   - `read_textual_declaration`
 - “把实现区改成下面这段代码”
   - `open_project`
+  - `read_textual_declaration`
   - `replace_text_document`
 - “在实现区最后再加一段”
   - `open_project`

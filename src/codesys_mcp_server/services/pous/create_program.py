@@ -12,6 +12,7 @@ from ._common import (
     error_response,
     require_absolute_path,
     require_non_empty_string,
+    resolve_effective_container_path,
     resolve_language,
     success_response,
 )
@@ -67,17 +68,22 @@ def create_program(
 
     try:
         validated_request = _validate_request(request)
+        resolved_container_path = resolve_effective_container_path(
+            browser=program_creator,
+            project_path=validated_request.project_path,
+            requested_container_path=validated_request.container_path,
+        )
 
         program_creator.create_program(
             project_path=validated_request.project_path,
-            container_path=validated_request.container_path,
+            container_path=resolved_container_path,
             name=validated_request.name,
             language=validated_request.language,
         )
 
         response_data = {
             "project_path": validated_request.project_path,
-            "container_path": validated_request.container_path,
+            "container_path": resolved_container_path,
             "name": validated_request.name,
             "object_type": "program",
             "language": validated_request.language,
@@ -89,7 +95,7 @@ def create_program(
                 "tool": TOOL_NAME,
                 "request_id": resolved_request_id,
                 "project_path": validated_request.project_path,
-                "container_path": validated_request.container_path,
+                "container_path": resolved_container_path,
                 "pou_name": validated_request.name,
                 "status": "success",
             },

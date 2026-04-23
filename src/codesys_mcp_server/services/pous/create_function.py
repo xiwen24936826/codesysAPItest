@@ -12,6 +12,7 @@ from ._common import (
     error_response,
     require_absolute_path,
     require_non_empty_string,
+    resolve_effective_container_path,
     resolve_language,
     success_response,
 )
@@ -69,10 +70,15 @@ def create_function(
 
     try:
         validated_request = _validate_request(request)
+        resolved_container_path = resolve_effective_container_path(
+            browser=function_creator,
+            project_path=validated_request.project_path,
+            requested_container_path=validated_request.container_path,
+        )
 
         function_creator.create_function(
             project_path=validated_request.project_path,
-            container_path=validated_request.container_path,
+            container_path=resolved_container_path,
             name=validated_request.name,
             return_type=validated_request.return_type,
             language=validated_request.language,
@@ -80,7 +86,7 @@ def create_function(
 
         response_data = {
             "project_path": validated_request.project_path,
-            "container_path": validated_request.container_path,
+            "container_path": resolved_container_path,
             "name": validated_request.name,
             "object_type": "function",
             "return_type": validated_request.return_type,
@@ -93,7 +99,7 @@ def create_function(
                 "tool": TOOL_NAME,
                 "request_id": resolved_request_id,
                 "project_path": validated_request.project_path,
-                "container_path": validated_request.container_path,
+                "container_path": resolved_container_path,
                 "pou_name": validated_request.name,
                 "status": "success",
             },

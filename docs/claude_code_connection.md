@@ -101,6 +101,12 @@ claude mcp add-json --scope project codesys-sp20 "{\"type\":\"stdio\",\"command\
 
 这就是当前阶段最小可用流程。
 
+补充说明：
+
+- 当前服务端会在调用方传入 `/` 或 `Application` 时，尽量自动解析到真实项目里的嵌套 `Application` 容器。
+- 当前真实后端建议源码和注释使用 ASCII-only，避免中文注释写入后乱码。
+- 如果让 Claude Code 生成实现区代码，最好同时明确要求它先补全声明区变量，再写实现区逻辑。
+
 ## 5. 连接后应该看到什么
 
 连接成功后，Claude Code 应该能发现当前阶段的 MCP tools，例如：
@@ -136,6 +142,12 @@ claude mcp add-json --scope project codesys-sp20 "{\"type\":\"stdio\",\"command\
 
 ```text
 在项目 D:\test\test_pou_create.project 中创建一个 ST 程序，名称为 DemoMain，并在实现区写入初始化代码。
+```
+
+更稳妥的写法是：
+
+```text
+在项目 D:\test\test_pou_create.project 中创建一个 ST 程序，名称为 DemoMain。请使用 ASCII-only 注释和代码；如果实现区使用到变量，先补全声明区变量；然后再写实现区逻辑。
 ```
 
 如果这条链路成功，说明：

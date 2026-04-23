@@ -14,6 +14,7 @@ from ._common import (
     require_absolute_path,
     require_non_empty_string,
     require_string_list,
+    resolve_effective_container_path,
     resolve_language,
     success_response,
 )
@@ -73,10 +74,15 @@ def create_function_block(
 
     try:
         validated_request = _validate_request(request)
+        resolved_container_path = resolve_effective_container_path(
+            browser=function_block_creator,
+            project_path=validated_request.project_path,
+            requested_container_path=validated_request.container_path,
+        )
 
         function_block_creator.create_function_block(
             project_path=validated_request.project_path,
-            container_path=validated_request.container_path,
+            container_path=resolved_container_path,
             name=validated_request.name,
             language=validated_request.language,
             base_type=validated_request.base_type,
@@ -85,7 +91,7 @@ def create_function_block(
 
         response_data = {
             "project_path": validated_request.project_path,
-            "container_path": validated_request.container_path,
+            "container_path": resolved_container_path,
             "name": validated_request.name,
             "object_type": "function_block",
             "language": validated_request.language,
@@ -99,7 +105,7 @@ def create_function_block(
                 "tool": TOOL_NAME,
                 "request_id": resolved_request_id,
                 "project_path": validated_request.project_path,
-                "container_path": validated_request.container_path,
+                "container_path": resolved_container_path,
                 "pou_name": validated_request.name,
                 "status": "success",
             },

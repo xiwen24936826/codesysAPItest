@@ -11,9 +11,11 @@ from uuid import uuid4
 from ._common import (
     error_response,
     require_absolute_path,
+    require_ascii_text,
     require_document_kind,
     require_non_empty_string,
     require_non_negative_int,
+    resolve_effective_container_path,
     success_response,
 )
 
@@ -72,9 +74,14 @@ def insert_text_document(
 
     try:
         validated_request = _validate_request(request)
+        resolved_container_path = resolve_effective_container_path(
+            browser=text_document_inserter,
+            project_path=validated_request.project_path,
+            requested_container_path=validated_request.container_path,
+        )
         text_document_inserter.insert_text_document(
             project_path=validated_request.project_path,
-            container_path=validated_request.container_path,
+            container_path=resolved_container_path,
             object_name=validated_request.object_name,
             document_kind=validated_request.document_kind,
             text_to_insert=validated_request.text_to_insert,
@@ -83,7 +90,7 @@ def insert_text_document(
 
         response_data = {
             "project_path": validated_request.project_path,
-            "container_path": validated_request.container_path,
+            "container_path": resolved_container_path,
             "object_name": validated_request.object_name,
             "document_kind": validated_request.document_kind,
             "updated": True,
@@ -167,9 +174,13 @@ def _validate_request(request: dict[str, Any]) -> InsertTextDocumentRequest:
             request.get("document_kind"),
             InsertTextDocumentValidationError,
         ),
-        text_to_insert=require_non_empty_string(
+        text_to_insert=require_ascii_text(
             "text_to_insert",
-            request.get("text_to_insert"),
+            require_non_empty_string(
+                "text_to_insert",
+                request.get("text_to_insert"),
+                InsertTextDocumentValidationError,
+            ),
             InsertTextDocumentValidationError,
         ),
         insertion_offset=require_non_negative_int(

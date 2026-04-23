@@ -11,8 +11,10 @@ from uuid import uuid4
 from ._common import (
     error_response,
     require_absolute_path,
+    require_ascii_text,
     require_document_kind,
     require_non_empty_string,
+    resolve_effective_container_path,
     success_response,
 )
 
@@ -69,9 +71,14 @@ def replace_text_document(
 
     try:
         validated_request = _validate_request(request)
+        resolved_container_path = resolve_effective_container_path(
+            browser=text_document_replacer,
+            project_path=validated_request.project_path,
+            requested_container_path=validated_request.container_path,
+        )
         text_document_replacer.replace_text_document(
             project_path=validated_request.project_path,
-            container_path=validated_request.container_path,
+            container_path=resolved_container_path,
             object_name=validated_request.object_name,
             document_kind=validated_request.document_kind,
             new_text=validated_request.new_text,
@@ -79,7 +86,7 @@ def replace_text_document(
 
         response_data = {
             "project_path": validated_request.project_path,
-            "container_path": validated_request.container_path,
+            "container_path": resolved_container_path,
             "object_name": validated_request.object_name,
             "document_kind": validated_request.document_kind,
             "updated": True,
@@ -148,6 +155,11 @@ def _validate_request(request: dict[str, Any]) -> ReplaceTextDocumentRequest:
             message="Field 'new_text' must be a string.",
             details={"field": "new_text", "value": new_text},
         )
+    new_text = require_ascii_text(
+        "new_text",
+        new_text,
+        ReplaceTextDocumentValidationError,
+    )
 
     return ReplaceTextDocumentRequest(
         project_path=require_absolute_path(

@@ -204,6 +204,36 @@ class InMemoryCodesysBackend:
             return
         raise LookupError("Unsupported document kind: %s" % document_kind)
 
+    def list_objects(
+        self,
+        project_path: str,
+        container_path: str = "/",
+    ) -> dict[str, object]:
+        project = self._require_project(project_path)
+        normalized = container_path.strip("/")
+
+        if not normalized:
+            return {
+                "project_path": project_path,
+                "container_path": "/",
+                "children": [
+                    {"name": name, "is_folder": True}
+                    for name in project.root_objects.keys()
+                ],
+            }
+
+        if normalized in project.root_objects:
+            return {
+                "project_path": project_path,
+                "container_path": normalized,
+                "children": [
+                    {"name": name, "is_folder": False}
+                    for name in project.root_objects[normalized].keys()
+                ],
+            }
+
+        raise LookupError("Container '%s' was not found." % container_path)
+
     def _require_project(self, path: str) -> InMemoryProject:
         try:
             return self._projects[path]

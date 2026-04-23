@@ -13,6 +13,7 @@ from ._common import (
     extract_text,
     require_absolute_path,
     require_non_empty_string,
+    resolve_effective_container_path,
     success_response,
 )
 
@@ -66,10 +67,15 @@ def read_textual_implementation(
 
     try:
         validated_request = _validate_request(request)
+        resolved_container_path = resolve_effective_container_path(
+            browser=text_document_reader,
+            project_path=validated_request.project_path,
+            requested_container_path=validated_request.container_path,
+        )
         text = extract_text(
             text_document_reader.read_text_document(
                 project_path=validated_request.project_path,
-                container_path=validated_request.container_path,
+                container_path=resolved_container_path,
                 object_name=validated_request.object_name,
                 document_kind="implementation",
             )
@@ -77,7 +83,7 @@ def read_textual_implementation(
 
         response_data = {
             "project_path": validated_request.project_path,
-            "container_path": validated_request.container_path,
+            "container_path": resolved_container_path,
             "object_name": validated_request.object_name,
             "document_kind": "implementation",
             "text": text,

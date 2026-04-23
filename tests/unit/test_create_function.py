@@ -40,6 +40,19 @@ class FakeFunctionCreator:
             }
         )
 
+    def list_objects(
+        self,
+        project_path: str,
+        container_path: str = "/",
+    ) -> dict[str, object]:
+        if container_path == "/":
+            return {"children": [{"name": "MyController", "is_folder": True}]}
+        if container_path == "MyController":
+            return {"children": [{"name": "PLC逻辑", "is_folder": True}]}
+        if container_path == "MyController/PLC逻辑":
+            return {"children": [{"name": "Application", "is_folder": True}]}
+        return {"children": []}
+
 
 class MissingProjectFunctionCreator:
     """Function creator test double that simulates a missing project."""
@@ -110,6 +123,30 @@ class CreateFunctionTests(unittest.TestCase):
 
         self.assertFalse(response["ok"])
         self.assertEqual(response["error"]["code"], "PROJECT_NOT_FOUND")
+
+    def test_create_function_auto_resolves_nested_application(self) -> None:
+        creator = FakeFunctionCreator()
+
+        response = create_function(
+            request={
+                "project_path": "D:/Projects/demo.project",
+                "container_path": "/",
+                "name": "CalculateSpeed",
+                "return_type": "REAL",
+            },
+            function_creator=creator,
+            request_id="req-fn-004",
+        )
+
+        self.assertTrue(response["ok"])
+        self.assertEqual(
+            response["data"]["container_path"],
+            "MyController/PLC逻辑/Application",
+        )
+        self.assertEqual(
+            creator.calls[0]["container_path"],
+            "MyController/PLC逻辑/Application",
+        )
 
 
 if __name__ == "__main__":

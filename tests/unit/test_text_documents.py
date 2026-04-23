@@ -45,6 +45,19 @@ class FakeTextDocumentReader:
         )
         return {"text": "PROGRAM MainProgram"}
 
+    def list_objects(
+        self,
+        project_path: str,
+        container_path: str = "/",
+    ) -> dict[str, object]:
+        if container_path == "/":
+            return {"children": [{"name": "MyController", "is_folder": True}]}
+        if container_path == "MyController":
+            return {"children": [{"name": "PLC逻辑", "is_folder": True}]}
+        if container_path == "MyController/PLC逻辑":
+            return {"children": [{"name": "Application", "is_folder": True}]}
+        return {"children": []}
+
 
 class MissingTextReader:
     """Reader test double that simulates missing text documents."""
@@ -83,6 +96,19 @@ class FakeTextDocumentWriter:
                 "new_text": new_text,
             }
         )
+
+    def list_objects(
+        self,
+        project_path: str,
+        container_path: str = "/",
+    ) -> dict[str, object]:
+        if container_path == "/":
+            return {"children": [{"name": "MyController", "is_folder": True}]}
+        if container_path == "MyController":
+            return {"children": [{"name": "PLC逻辑", "is_folder": True}]}
+        if container_path == "MyController/PLC逻辑":
+            return {"children": [{"name": "Application", "is_folder": True}]}
+        return {"children": []}
 
     def append_text_document(
         self,
@@ -145,6 +171,10 @@ class TextDocumentServiceTests(unittest.TestCase):
         self.assertEqual(response["data"]["document_kind"], "declaration")
         self.assertEqual(response["data"]["text"], "PROGRAM MainProgram")
         self.assertEqual(reader.calls[0]["document_kind"], "declaration")
+        self.assertEqual(
+            reader.calls[0]["container_path"],
+            "MyController/PLC逻辑/Application",
+        )
 
     def test_read_textual_implementation_reports_missing_text(self) -> None:
         response = read_textual_implementation(
@@ -197,6 +227,10 @@ class TextDocumentServiceTests(unittest.TestCase):
         self.assertTrue(response["ok"])
         self.assertEqual(response["data"]["appended_length"], 23)
         self.assertEqual(writer.calls[0]["kind"], "append")
+        self.assertEqual(
+            writer.calls[0]["container_path"],
+            "MyController/PLC逻辑/Application",
+        )
 
     def test_insert_text_document_requires_non_negative_offset(self) -> None:
         writer = FakeTextDocumentWriter()
@@ -217,6 +251,44 @@ class TextDocumentServiceTests(unittest.TestCase):
         self.assertFalse(response["ok"])
         self.assertEqual(response["error"]["code"], "VALIDATION_ERROR")
         self.assertEqual(response["error"]["details"]["field"], "insertion_offset")
+        self.assertEqual(writer.calls, [])
+
+    def test_replace_text_document_rejects_non_ascii_text(self) -> None:
+        writer = FakeTextDocumentWriter()
+
+        response = replace_text_document(
+            request={
+                "project_path": "D:/Projects/demo.project",
+                "container_path": "Application",
+                "object_name": "MainProgram",
+                "document_kind": "implementation",
+                "new_text": "// 初始化\nx := 1;",
+            },
+            text_document_replacer=writer,
+            request_id="req-text-006",
+        )
+
+        self.assertFalse(response["ok"])
+        self.assertEqual(response["error"]["code"], "NON_ASCII_TEXT_UNSUPPORTED")
+        self.assertEqual(writer.calls, [])
+
+    def test_append_text_document_rejects_non_ascii_text(self) -> None:
+        writer = FakeTextDocumentWriter()
+
+        response = append_text_document(
+            request={
+                "project_path": "D:/Projects/demo.project",
+                "container_path": "Application",
+                "object_name": "MainProgram",
+                "document_kind": "implementation",
+                "text_to_append": "// 初始化",
+            },
+            text_document_appender=writer,
+            request_id="req-text-007",
+        )
+
+        self.assertFalse(response["ok"])
+        self.assertEqual(response["error"]["code"], "NON_ASCII_TEXT_UNSUPPORTED")
         self.assertEqual(writer.calls, [])
 
 

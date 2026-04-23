@@ -10,6 +10,8 @@ from typing import Any
 
 DEFAULT_LANGUAGE = "ST"
 VALID_DOCUMENT_KINDS = {"declaration", "implementation"}
+DEFAULT_CONTAINER_ALIASES = {"/", "Application", "/Application"}
+APPLICATION_CONTAINER_NAME = "Application"
 
 
 def success_response(
@@ -179,3 +181,86 @@ def extract_text(result: Any) -> str:
     if isinstance(result, str):
         return result
     raise TypeError("Text document adapter returned an unsupported result.")
+
+
+def require_ascii_text(
+    field: str,
+    value: str,
+    error_cls: type[Exception],
+) -> str:
+    try:
+        value.encode("ascii")
+    except UnicodeEncodeError:
+        raise error_cls(
+            message=(
+                "Field '%s' must contain ASCII-only source text. "
+                "Non-ASCII comments or literals are currently not supported "
+                "by the real IDE automation path."
+            )
+            % field,
+            details={"field": field, "value": value},
+            code="NON_ASCII_TEXT_UNSUPPORTED",
+        )
+    return value
+
+
+def resolve_effective_container_path(
+    browser: Any,
+    project_path: str,
+    requested_container_path: str,
+) -> str:
+    normalized = (requested_container_path or "").strip()
+    if normalized not in DEFAULT_CONTAINER_ALIASES:
+        return requested_container_path
+
+    if not hasattr(browser, "list_objects"):
+        return requested_container_path
+
+    discovered = _find_named_container_path(
+        browser=browser,
+        project_path=project_path,
+        target_name=APPLICATION_CONTAINER_NAME,
+    )
+    return discovered or requested_container_path
+
+
+def _find_named_container_path(
+    browser: Any,
+    project_path: str,
+    target_name: str,
+    max_depth: int = 8,
+) -> str | None:
+    queue: list[tuple[str, int]] = [("/", 0)]
+    seen: set[str] = set()
+
+    while queue:
+        current_path, depth = queue.pop(0)
+        if current_path in seen or depth > max_depth:
+            continue
+        seen.add(current_path)
+
+        listing = browser.list_objects(
+            project_path=project_path,
+            container_path=current_path,
+        )
+        children = listing.get("children", []) if isinstance(listing, dict) else []
+
+        for child in children:
+            if not isinstance(child, dict):
+                continue
+            child_name = child.get("name")
+            if not isinstance(child_name, str) or not child_name:
+                continue
+
+            child_path = _join_container_path(current_path, child_name)
+            if child_name == target_name:
+                return child_path
+            queue.append((child_path, depth + 1))
+
+    return None
+
+
+def _join_container_path(parent_path: str, child_name: str) -> str:
+    if parent_path in ("", "/"):
+        return child_name
+    return "%s/%s" % (parent_path.strip("/"), child_name)
