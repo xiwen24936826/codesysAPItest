@@ -202,3 +202,19 @@ class ServerApplicationTests(unittest.TestCase):
             next(call for call in backend.calls if call["tool"] == "scan_network_devices")["use_cached_result"],
             True,
         )
+
+    def test_call_tool_rejects_unexpected_arguments_by_catalog_policy(self) -> None:
+        backend = FakeBackend()
+        app = create_server_application(backend)
+        result = app.call_tool(
+            name="create_project",
+            arguments={
+                "project_path": "D:/Projects/demo.project",
+                "project_mode": "empty",
+                "container_path": "Application",
+            },
+            request_id="server-005",
+        )
+        self.assertFalse(result.ok)
+        self.assertEqual(result.payload["error"]["code"], "TOOL_ARGUMENT_SCHEMA_VIOLATION")
+        self.assertEqual(backend.calls, [])

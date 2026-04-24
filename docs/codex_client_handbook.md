@@ -5,6 +5,8 @@
 - 阶段范围和稳定边界以 [current_phase_plan.md](D:\工作资料\codesysAPItest\docs\current_phase_plan.md) 为准
 - 本文档只保留客户端应如何选工具、如何递归扫描、以及如何避免误调用
 - Claude Code 的连接细节放在 [claude_code_connection.md](D:\工作资料\codesysAPItest\docs\claude_code_connection.md)
+- 工具的单一权威索引见 [tool_catalog.md](D:\工作资料\codesysAPItest\docs\api_specs\tool_catalog.md)
+- 工作流分组视图见 [client_workflows.md](D:\工作资料\codesysAPItest\docs\client_workflows.md)
 
 ## 1. 当前可靠能力
 

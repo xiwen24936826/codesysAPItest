@@ -8,6 +8,11 @@
 [codex_client_handbook.md](D:\工作资料\codesysAPItest\docs\codex_client_handbook.md)
 为主。本文件只保留 Claude Code 的连接方式、最小启动流程和排查入口。
 
+工具目录与工作流索引分别见：
+
+- [tool_catalog.md](D:\工作资料\codesysAPItest\docs\api_specs\tool_catalog.md)
+- [client_workflows.md](D:\工作资料\codesysAPItest\docs\client_workflows.md)
+
 ## 1. 当前推荐方案
 
 使用：

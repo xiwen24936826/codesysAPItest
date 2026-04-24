@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
 from typing import Any, Callable
 
 from codesys_mcp_server.services.pous import (
@@ -24,20 +23,11 @@ from codesys_mcp_server.services.projects import (
     open_project,
     save_project,
 )
+from codesys_mcp_server.tools.catalog import TOOL_CATALOG, ToolCatalogEntry
 from codesys_mcp_server.tools.registry import ToolHandler, ToolRegistry
 
 
 HandlerBuilder = Callable[[Any], ToolHandler]
-
-
-@dataclass(frozen=True)
-class ToolSpec:
-    """Declarative specification for one registered tool."""
-
-    name: str
-    description: str
-    input_schema: dict[str, Any]
-    handler_builder: HandlerBuilder
 
 
 def _bind_create_project(backend: Any) -> ToolHandler:
@@ -160,154 +150,38 @@ def _bind_insert_text_document(backend: Any) -> ToolHandler:
     )
 
 
-TOOL_SPECS = [
-    ToolSpec(
-        name="create_project",
-        description="Create a new CODESYS project.",
-        input_schema={"type": "object", "required": ["project_path", "project_mode"]},
-        handler_builder=_bind_create_project,
-    ),
-    ToolSpec(
-        name="open_project",
-        description="Open an existing CODESYS project.",
-        input_schema={"type": "object", "required": ["project_path"]},
-        handler_builder=_bind_open_project,
-    ),
-    ToolSpec(
-        name="list_project_objects",
-        description="List child objects below a logical container in the project tree.",
-        input_schema={"type": "object", "required": ["project_path"]},
-        handler_builder=_bind_list_project_objects,
-    ),
-    ToolSpec(
-        name="find_project_objects",
-        description="Find matching objects by name below a logical container in the project tree.",
-        input_schema={"type": "object", "required": ["project_path", "object_name"]},
-        handler_builder=_bind_find_project_objects,
-    ),
-    ToolSpec(
-        name="scan_network_devices",
-        description="Scan online targets through a configured CODESYS gateway.",
-        input_schema={"type": "object", "required": []},
-        handler_builder=_bind_scan_network_devices,
-    ),
-    ToolSpec(
-        name="save_project",
-        description="Save or save-as an existing CODESYS project.",
-        input_schema={"type": "object", "required": ["project_path", "save_mode"]},
-        handler_builder=_bind_save_project,
-    ),
-    ToolSpec(
-        name="add_controller_device",
-        description="Add a top-level controller device to a project.",
-        input_schema={
-            "type": "object",
-            "required": [
-                "project_path",
-                "device_name",
-                "device_type",
-                "device_id",
-                "device_version",
-            ],
-        },
-        handler_builder=_bind_add_controller_device,
-    ),
-    ToolSpec(
-        name="create_program",
-        description="Create a PRG in the selected container.",
-        input_schema={"type": "object", "required": ["project_path", "container_path", "name"]},
-        handler_builder=_bind_create_program,
-    ),
-    ToolSpec(
-        name="create_function_block",
-        description="Create a function block in the selected container.",
-        input_schema={"type": "object", "required": ["project_path", "container_path", "name"]},
-        handler_builder=_bind_create_function_block,
-    ),
-    ToolSpec(
-        name="create_function",
-        description="Create a function in the selected container.",
-        input_schema={
-            "type": "object",
-            "required": ["project_path", "container_path", "name", "return_type"],
-        },
-        handler_builder=_bind_create_function,
-    ),
-    ToolSpec(
-        name="read_textual_declaration",
-        description="Read the textual declaration part of an object.",
-        input_schema={
-            "type": "object",
-            "required": ["project_path", "container_path", "object_name"],
-        },
-        handler_builder=_bind_read_textual_declaration,
-    ),
-    ToolSpec(
-        name="read_textual_implementation",
-        description="Read the textual implementation part of an object.",
-        input_schema={
-            "type": "object",
-            "required": ["project_path", "container_path", "object_name"],
-        },
-        handler_builder=_bind_read_textual_implementation,
-    ),
-    ToolSpec(
-        name="replace_text_document",
-        description="Replace a declaration or implementation document.",
-        input_schema={
-            "type": "object",
-            "required": [
-                "project_path",
-                "container_path",
-                "object_name",
-                "document_kind",
-                "new_text",
-            ],
-        },
-        handler_builder=_bind_replace_text_document,
-    ),
-    ToolSpec(
-        name="append_text_document",
-        description="Append text to the end of a declaration or implementation document.",
-        input_schema={
-            "type": "object",
-            "required": [
-                "project_path",
-                "container_path",
-                "object_name",
-                "document_kind",
-                "text_to_append",
-            ],
-        },
-        handler_builder=_bind_append_text_document,
-    ),
-    ToolSpec(
-        name="insert_text_document",
-        description="Insert text into a declaration or implementation document at a fixed offset.",
-        input_schema={
-            "type": "object",
-            "required": [
-                "project_path",
-                "container_path",
-                "object_name",
-                "document_kind",
-                "text_to_insert",
-                "insertion_offset",
-            ],
-        },
-        handler_builder=_bind_insert_text_document,
-    ),
-]
+HANDLER_BUILDERS: dict[str, HandlerBuilder] = {
+    "create_project": _bind_create_project,
+    "open_project": _bind_open_project,
+    "list_project_objects": _bind_list_project_objects,
+    "find_project_objects": _bind_find_project_objects,
+    "scan_network_devices": _bind_scan_network_devices,
+    "save_project": _bind_save_project,
+    "add_controller_device": _bind_add_controller_device,
+    "create_program": _bind_create_program,
+    "create_function_block": _bind_create_function_block,
+    "create_function": _bind_create_function,
+    "read_textual_declaration": _bind_read_textual_declaration,
+    "read_textual_implementation": _bind_read_textual_implementation,
+    "replace_text_document": _bind_replace_text_document,
+    "append_text_document": _bind_append_text_document,
+    "insert_text_document": _bind_insert_text_document,
+}
 
 
 def build_tool_registry(backend: Any) -> ToolRegistry:
     """Build the default phase-1 registry on top of one backend."""
     registry = ToolRegistry()
-    for spec in TOOL_SPECS:
+    for entry in TOOL_CATALOG:
         registry.register(
-            spec.name,
-            spec.description,
-            spec.input_schema,
-            spec.handler_builder(backend),
+            catalog_entry=entry,
+            handler=_resolve_handler_builder(entry)(backend),
         )
     return registry
+
+
+def _resolve_handler_builder(entry: ToolCatalogEntry) -> HandlerBuilder:
+    try:
+        return HANDLER_BUILDERS[entry.handler_key]
+    except KeyError as exc:
+        raise KeyError("Missing handler builder for tool catalog entry '%s'." % entry.name) from exc

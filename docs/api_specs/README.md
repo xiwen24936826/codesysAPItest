@@ -9,3 +9,4 @@
 当前已建立的规范文档：
 
 - [mcp_tools_phase1.md](D:\工作资料\codesysAPItest\docs\api_specs\mcp_tools_phase1.md): 第一阶段 MCP 工具输入输出规范
+- [tool_catalog.md](D:\工作资料\codesysAPItest\docs\api_specs\tool_catalog.md): 从 canonical tool catalog 生成的工具权威索引

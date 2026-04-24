@@ -44,6 +44,10 @@ class ServerRuntime:
             for tool in self._app.list_tools()
         ]
 
+    def export_tool_catalog(self) -> list[dict[str, Any]]:
+        """Export the canonical machine-readable tool catalog."""
+        return self._app.export_tool_catalog()
+
     def call_tool(
         self,
         name: str,

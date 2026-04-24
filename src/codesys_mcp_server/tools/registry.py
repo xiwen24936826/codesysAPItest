@@ -6,6 +6,7 @@ from dataclasses import dataclass
 from typing import Any, Callable
 
 from codesys_mcp_server.models.tooling import ToolDefinition
+from codesys_mcp_server.tools.catalog import ToolCatalogEntry
 
 
 ToolHandler = Callable[[dict[str, Any], str | None], dict[str, Any]]
@@ -15,6 +16,7 @@ ToolHandler = Callable[[dict[str, Any], str | None], dict[str, Any]]
 class RegisteredTool:
     """One registered tool and its handler."""
 
+    catalog_entry: ToolCatalogEntry
     definition: ToolDefinition
     handler: ToolHandler
 
@@ -27,18 +29,17 @@ class ToolRegistry:
 
     def register(
         self,
-        name: str,
-        description: str,
-        input_schema: dict[str, Any],
+        catalog_entry: ToolCatalogEntry,
         handler: ToolHandler,
     ) -> None:
-        if name in self._tools:
-            raise ValueError("Tool '%s' is already registered." % name)
-        self._tools[name] = RegisteredTool(
+        if catalog_entry.name in self._tools:
+            raise ValueError("Tool '%s' is already registered." % catalog_entry.name)
+        self._tools[catalog_entry.name] = RegisteredTool(
+            catalog_entry=catalog_entry,
             definition=ToolDefinition(
-                name=name,
-                description=description,
-                input_schema=input_schema,
+                name=catalog_entry.name,
+                description=catalog_entry.description,
+                input_schema=catalog_entry.input_schema,
             ),
             handler=handler,
         )
