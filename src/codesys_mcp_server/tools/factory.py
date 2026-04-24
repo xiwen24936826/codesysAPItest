@@ -12,6 +12,7 @@ from codesys_mcp_server.services.pous import (
     insert_text_document,
     read_textual_declaration,
     read_textual_implementation,
+    replace_line,
     replace_text_document,
 )
 from codesys_mcp_server.services.online import scan_network_devices
@@ -150,6 +151,14 @@ def _bind_insert_text_document(backend: Any) -> ToolHandler:
     )
 
 
+def _bind_replace_line(backend: Any) -> ToolHandler:
+    return lambda request, request_id=None: replace_line(
+        request=request,
+        text_document_line_replacer=backend,
+        request_id=request_id,
+    )
+
+
 HANDLER_BUILDERS: dict[str, HandlerBuilder] = {
     "create_project": _bind_create_project,
     "open_project": _bind_open_project,
@@ -166,6 +175,7 @@ HANDLER_BUILDERS: dict[str, HandlerBuilder] = {
     "replace_text_document": _bind_replace_text_document,
     "append_text_document": _bind_append_text_document,
     "insert_text_document": _bind_insert_text_document,
+    "replace_line": _bind_replace_line,
 }
 
 

@@ -56,9 +56,33 @@ Deferred:
 - `append_text_document`: append only to the end
 - `insert_text_document`: insert at a fixed character offset
 
+Additional text-edit tools worth keeping in the roadmap:
+
+- `replace_line`: replace one specific line in a text document
+- `remove_text`: remove a selected text or line range from a text document
+
 Phase 1 uses only one insertion strategy:
 
 - `insertion_offset`
+
+Current priority judgment:
+
+1. `replace_line` is useful and should be added before broader text-repair tooling
+2. `remove_text` is useful, but can stay behind `replace_line` in priority
+
+Why they still matter:
+
+- `replace_text_document` is best for full regeneration
+- `append_text_document` is best for tail growth
+- `insert_text_document` is best for fixed-position insertion
+- but none of the current tools is ideal for:
+  - replacing exactly one existing line
+  - deleting a known line or line range without rewriting the whole document
+
+That means:
+
+- `replace_line` reduces unnecessary whole-document rewrites
+- `remove_text` reduces brittle read-modify-replace flows for simple deletions
 
 ## Real Integration Strategy
 
@@ -168,6 +192,77 @@ The repository now also enforces these write-path rules for POU source text:
    implementation
 4. UTF-8 source comments are now validated on ASCII project paths; only
    project filesystem paths still remain ASCII-only
+
+### Planned Text Editing Follow-up
+
+The next text-editing enhancement slice should keep these two tools in scope:
+
+1. `replace_line`
+2. `remove_text`
+
+Current judgment:
+
+1. both tools are worth keeping in the roadmap
+2. `replace_line` has higher practical priority than `remove_text`
+3. `replace_line` is now exposed in the current MCP tool list
+4. `remove_text` remains planned and not yet implemented
+
+Recommended order:
+
+1. implement `replace_line` (completed)
+2. implement `remove_text`
+
+Planned API base:
+
+1. `ScriptTextDocument.replace_line(line_number, new_text)`
+2. `ScriptTextDocument.remove(...)`
+
+Why they are still needed even though `replace_text_document` already exists:
+
+1. `replace_text_document` is best for full regeneration of one declaration or implementation document
+2. `append_text_document` is best for tail growth
+3. `insert_text_document` is best for fixed-position insertion
+4. but none of the current tools is ideal for:
+   - replacing exactly one known line
+   - deleting one known line or one known contiguous line range
+
+Expected value:
+
+1. `replace_line` reduces unnecessary whole-document rewrites for small repairs
+2. `remove_text` reduces brittle read-modify-replace flows when the edit intent is simply deletion
+3. both tools make AI-driven “surgical edits” cheaper and safer than rewriting a whole implementation block
+
+Expected MCP design:
+
+- `replace_line`
+  - input:
+    - `project_path`
+    - `container_path`
+    - `object_name`
+    - `document_kind`
+    - `line_number`
+    - `new_text`
+- `remove_text`
+  - input:
+    - `project_path`
+    - `container_path`
+    - `object_name`
+    - `document_kind`
+    - either:
+      - `start_line`, `end_line`
+      - or a later text-range contract if the real IDE path proves more stable
+
+Rules:
+
+- both tools must reuse the same declaration/implementation consistency checks
+- both tools must keep read-after-write round-trip verification
+- both tools must continue to operate on ASCII-only project paths
+- source text itself may remain UTF-8
+
+Implementation note:
+
+- `replace_line` has been implemented as the current POU text-editing slice
+- `remove_text` should follow after `replace_line`, unless a concrete deletion-heavy use case becomes urgent sooner
 
 ## 2026-04-23 Device Tree Scan Enhancement Plan
 

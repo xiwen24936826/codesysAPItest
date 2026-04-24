@@ -71,6 +71,7 @@ class FakeBackend:
     def replace_text_document(self, *args, **kwargs) -> None: return None
     def append_text_document(self, *args, **kwargs) -> None: return None
     def insert_text_document(self, *args, **kwargs) -> None: return None
+    def replace_text_line(self, *args, **kwargs) -> None: return None
     def list_objects(self, project_path: str, container_path: str = "/") -> dict[str, object]:
         self.calls.append(
             {
@@ -134,6 +135,7 @@ class ServerApplicationTests(unittest.TestCase):
         self.assertIn("create_program", names)
         self.assertIn("list_project_objects", names)
         self.assertIn("read_textual_implementation", names)
+        self.assertIn("replace_line", names)
 
     def test_call_tool_dispatches_to_service_handler(self) -> None:
         backend = FakeBackend()

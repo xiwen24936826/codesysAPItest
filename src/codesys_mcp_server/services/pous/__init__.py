@@ -7,6 +7,7 @@ from .create_program import create_program
 from .insert_text_document import insert_text_document
 from .read_textual_declaration import read_textual_declaration
 from .read_textual_implementation import read_textual_implementation
+from .replace_line import replace_line
 from .replace_text_document import replace_text_document
 
 __all__ = [
@@ -17,5 +18,6 @@ __all__ = [
     "insert_text_document",
     "read_textual_declaration",
     "read_textual_implementation",
+    "replace_line",
     "replace_text_document",
 ]

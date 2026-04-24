@@ -423,6 +423,30 @@ def _handle_insert_text_document(request):
     return result
 
 
+def _handle_replace_text_line(request):
+    project = _open_project(request)
+    target_object = _resolve_target_object(
+        project,
+        request["container_path"],
+        request["object_name"],
+    )
+    document = _get_text_document(target_object, request["document_kind"])
+    document.replace_line(
+        request["line_number"],
+        request["new_text"],
+    )
+    project.save()
+    result = {
+        "project_path": project.path,
+        "object_name": request["object_name"],
+        "document_kind": request["document_kind"],
+        "updated": True,
+        "line_number": request["line_number"],
+    }
+    project.close()
+    return result
+
+
 def _handle_list_objects(request):
     project = _open_project(request)
     container_path = request.get("container_path", "/")
@@ -533,6 +557,7 @@ def main():
         "replace_text_document": _handle_replace_text_document,
         "append_text_document": _handle_append_text_document,
         "insert_text_document": _handle_insert_text_document,
+        "replace_text_line": _handle_replace_text_line,
         "list_objects": _handle_list_objects,
         "find_objects": _handle_find_objects,
         "scan_network_devices": _handle_scan_network_devices,

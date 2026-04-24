@@ -579,3 +579,53 @@
   "additionalProperties": false
 }
 ```
+
+## `replace_line`
+
+- 代码：`POU-009`
+- 类别：`pous / 程序组织单元`
+- 功能：Replace one line in a declaration or implementation document.
+- 风险等级：`caution / 需谨慎`
+- 工作流：`现有工程编辑流`
+- 推荐前置工具：`open_project`
+
+输入字段：
+
+```json
+{
+  "type": "object",
+  "required": [
+    "project_path",
+    "container_path",
+    "object_name",
+    "document_kind",
+    "line_number",
+    "new_text"
+  ],
+  "properties": {
+    "project_path": {
+      "type": "string"
+    },
+    "container_path": {
+      "type": "string"
+    },
+    "object_name": {
+      "type": "string"
+    },
+    "document_kind": {
+      "type": "string",
+      "enum": [
+        "declaration",
+        "implementation"
+      ]
+    },
+    "line_number": {
+      "type": "integer"
+    },
+    "new_text": {
+      "type": "string"
+    }
+  },
+  "additionalProperties": false
+}
+```

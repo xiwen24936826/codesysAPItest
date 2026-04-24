@@ -200,6 +200,19 @@ def require_non_negative_int(
     return value
 
 
+def require_positive_int(
+    field: str,
+    value: Any,
+    error_cls: type[Exception],
+) -> int:
+    if not isinstance(value, int) or value <= 0:
+        raise error_cls(
+            message="Field '%s' must be a positive integer." % field,
+            details={"field": field, "value": value},
+        )
+    return value
+
+
 def extract_text(result: Any) -> str:
     if isinstance(result, dict):
         text = result.get("text")
@@ -474,3 +487,34 @@ def _first_mismatch_index(expected_text: str, actual_text: str) -> int:
         if expected_text[index] != actual_text[index]:
             return index
     return shared_length
+
+
+def replace_line_in_text(
+    *,
+    current_text: str,
+    line_number: int,
+    new_text: str,
+    error_cls: type[Exception],
+) -> str:
+    lines = current_text.splitlines(True)
+    if line_number < 1 or line_number > len(lines):
+        raise_validation_error(
+            error_cls=error_cls,
+            message="Field 'line_number' is outside the document line range.",
+            details={
+                "field": "line_number",
+                "value": line_number,
+                "line_count": len(lines),
+            },
+        )
+
+    target_index = line_number - 1
+    original_line = lines[target_index]
+    line_ending = ""
+    if original_line.endswith("\r\n"):
+        line_ending = "\r\n"
+    elif original_line.endswith("\n") or original_line.endswith("\r"):
+        line_ending = original_line[-1]
+
+    lines[target_index] = new_text + line_ending
+    return "".join(lines)

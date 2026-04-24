@@ -385,6 +385,28 @@ class CodesysProjectAdapter:
             }
         )
 
+    def replace_text_line(
+        self,
+        project_path: str,
+        container_path: str,
+        object_name: str,
+        document_kind: str,
+        line_number: int,
+        new_text: str,
+    ) -> dict[str, Any]:
+        """Replace one line in a textual declaration or implementation document."""
+        return self._runner.run_operation(
+            {
+                "operation": "replace_text_line",
+                "project_path": project_path,
+                "container_path": container_path,
+                "object_name": object_name,
+                "document_kind": document_kind,
+                "line_number": line_number,
+                "new_text": new_text,
+            }
+        )
+
     def list_objects(
         self,
         project_path: str,

@@ -204,6 +204,24 @@ class InMemoryCodesysBackend:
             return
         raise LookupError("Unsupported document kind: %s" % document_kind)
 
+    def replace_text_line(
+        self,
+        project_path: str,
+        container_path: str,
+        object_name: str,
+        document_kind: str,
+        line_number: int,
+        new_text: str,
+    ) -> None:
+        pou = self._require_object(project_path, container_path, object_name)
+        if document_kind == "declaration":
+            pou.declaration = self._replace_line(pou.declaration, line_number, new_text)
+            return
+        if document_kind == "implementation":
+            pou.implementation = self._replace_line(pou.implementation, line_number, new_text)
+            return
+        raise LookupError("Unsupported document kind: %s" % document_kind)
+
     def list_objects(
         self,
         project_path: str,
@@ -362,3 +380,20 @@ class InMemoryCodesysBackend:
     def _ensure_missing(container: dict[str, InMemoryPou], name: str) -> None:
         if name in container:
             raise LookupError("Object '%s' already exists." % name)
+
+    @staticmethod
+    def _replace_line(current_text: str, line_number: int, new_text: str) -> str:
+        lines = current_text.splitlines(True)
+        if line_number < 1 or line_number > len(lines):
+            raise LookupError("Line %s is outside the document range." % line_number)
+
+        target_index = line_number - 1
+        original_line = lines[target_index]
+        line_ending = ""
+        if original_line.endswith("\r\n"):
+            line_ending = "\r\n"
+        elif original_line.endswith("\n") or original_line.endswith("\r"):
+            line_ending = original_line[-1]
+
+        lines[target_index] = new_text + line_ending
+        return "".join(lines)

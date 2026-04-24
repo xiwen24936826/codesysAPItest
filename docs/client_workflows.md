@@ -20,6 +20,8 @@
   前置建议：`open_project`
 - `read_textual_implementation`：Read the textual implementation part of an object.（风险：`safe / 低风险`）
   前置建议：`open_project`
+- `replace_line`：Replace one line in a declaration or implementation document.（风险：`caution / 需谨慎`）
+  前置建议：`open_project`
 - `replace_text_document`：Replace a declaration or implementation document.（风险：`caution / 需谨慎`）
   前置建议：`open_project`
 - `find_project_objects`：Find matching objects by name below a logical container in the project tree.（风险：`safe / 低风险`）

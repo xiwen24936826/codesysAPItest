@@ -68,6 +68,7 @@ TOOL_CODE_BY_NAME: dict[str, str] = {
     "replace_text_document": "POU-006",
     "append_text_document": "POU-007",
     "insert_text_document": "POU-008",
+    "replace_line": "POU-009",
     "scan_network_devices": "DEV-001",
 }
 
@@ -87,6 +88,7 @@ TOOL_CATEGORY_BY_NAME: dict[str, str] = {
     "replace_text_document": "pous",
     "append_text_document": "pous",
     "insert_text_document": "pous",
+    "replace_line": "pous",
     "scan_network_devices": "devices",
 }
 
@@ -381,6 +383,33 @@ TOOL_CATALOG: tuple[ToolCatalogEntry, ...] = (
             },
         ),
         handler_key="insert_text_document",
+        domain="pous",
+        workflow_ids=("existing_project_edit_flow",),
+        risk_level="caution",
+        preferred_predecessors=("open_project",),
+    ),
+    ToolCatalogEntry(
+        name="replace_line",
+        description="Replace one line in a declaration or implementation document.",
+        input_schema=_object_schema(
+            required=[
+                "project_path",
+                "container_path",
+                "object_name",
+                "document_kind",
+                "line_number",
+                "new_text",
+            ],
+            properties={
+                "project_path": {"type": "string"},
+                "container_path": {"type": "string"},
+                "object_name": {"type": "string"},
+                "document_kind": {"type": "string", "enum": ["declaration", "implementation"]},
+                "line_number": {"type": "integer"},
+                "new_text": {"type": "string"},
+            },
+        ),
+        handler_key="replace_line",
         domain="pous",
         workflow_ids=("existing_project_edit_flow",),
         risk_level="caution",

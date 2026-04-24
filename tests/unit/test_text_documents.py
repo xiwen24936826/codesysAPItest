@@ -19,6 +19,7 @@ from codesys_mcp_server.services.pous.read_textual_declaration import read_textu
 from codesys_mcp_server.services.pous.read_textual_implementation import (
     read_textual_implementation,
 )
+from codesys_mcp_server.services.pous.replace_line import replace_line
 from codesys_mcp_server.services.pous.replace_text_document import replace_text_document
 
 
@@ -197,6 +198,44 @@ class FakeTextDocumentWriter:
                 + self.implementation[insertion_offset:]
             )
 
+    def replace_text_line(
+        self,
+        project_path: str,
+        container_path: str,
+        object_name: str,
+        document_kind: str,
+        line_number: int,
+        new_text: str,
+    ) -> None:
+        self.calls.append(
+            {
+                "kind": "replace_line",
+                "project_path": project_path,
+                "container_path": container_path,
+                "object_name": object_name,
+                "document_kind": document_kind,
+                "line_number": line_number,
+                "new_text": new_text,
+            }
+        )
+        target = self.declaration if document_kind == "declaration" else self.implementation
+        lines = target.splitlines(True)
+        if line_number < 1 or line_number > len(lines):
+            raise LookupError("Line %s is outside the document range." % line_number)
+        original_line = lines[line_number - 1]
+        if original_line.endswith("\r\n"):
+            line_ending = "\r\n"
+        elif original_line.endswith("\n") or original_line.endswith("\r"):
+            line_ending = original_line[-1]
+        else:
+            line_ending = ""
+        lines[line_number - 1] = new_text + line_ending
+        updated = "".join(lines)
+        if document_kind == "declaration":
+            self.declaration = updated
+        else:
+            self.implementation = updated
+
 
 class CorruptingTextDocumentWriter(FakeTextDocumentWriter):
     """Writer that simulates a broken write/read round-trip."""
@@ -340,6 +379,48 @@ class TextDocumentServiceTests(unittest.TestCase):
         self.assertFalse(response["ok"])
         self.assertEqual(response["error"]["code"], "VALIDATION_ERROR")
         self.assertEqual(response["error"]["details"]["field"], "insertion_offset")
+
+    def test_replace_line_updates_one_line_and_verifies_roundtrip(self) -> None:
+        writer = FakeTextDocumentWriter()
+
+        response = replace_line(
+            request={
+                "project_path": "D:/Projects/demo.project",
+                "container_path": "Application",
+                "object_name": "MainProgram",
+                "document_kind": "implementation",
+                "line_number": 1,
+                "new_text": "Counter := Counter + 2;",
+            },
+            text_document_line_replacer=writer,
+            request_id="req-text-005c",
+        )
+
+        self.assertTrue(response["ok"])
+        replace_call = next(call for call in writer.calls if call["kind"] == "replace_line")
+        self.assertEqual(replace_call["line_number"], 1)
+        self.assertEqual(replace_call["container_path"], NESTED_APPLICATION_PATH)
+        self.assertTrue(response["data"]["roundtrip_verified"])
+
+    def test_replace_line_rejects_out_of_range_line_numbers(self) -> None:
+        writer = FakeTextDocumentWriter()
+
+        response = replace_line(
+            request={
+                "project_path": "D:/Projects/demo.project",
+                "container_path": "Application",
+                "object_name": "MainProgram",
+                "document_kind": "implementation",
+                "line_number": 2,
+                "new_text": "Counter := Counter + 2;",
+            },
+            text_document_line_replacer=writer,
+            request_id="req-text-005d",
+        )
+
+        self.assertFalse(response["ok"])
+        self.assertEqual(response["error"]["code"], "VALIDATION_ERROR")
+        self.assertEqual(response["error"]["details"]["field"], "line_number")
 
     def test_replace_text_document_accepts_utf8_text(self) -> None:
         writer = FakeTextDocumentWriter()
