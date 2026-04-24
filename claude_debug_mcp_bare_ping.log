@@ -1,0 +1,126 @@
+2026-04-23T09:00:50.334Z [DEBUG] MDM settings load completed in 25ms
+2026-04-23T09:00:50.360Z [DEBUG] Broken symlink or missing file encountered for settings.json at path: C:\Program Files\ClaudeCode\managed-settings.json
+2026-04-23T09:00:50.361Z [DEBUG] Broken symlink or missing file encountered for settings.json at path: D:\工作资料\codesysAPItest\.claude\settings.local.json
+2026-04-23T09:00:50.361Z [DEBUG] CA certs: Config fallback - globalEnv keys: , settingsEnv keys: ANTHROPIC_AUTH_TOKEN,ANTHROPIC_BASE_URL,ANTHROPIC_DEFAULT_HAIKU_MODEL,ANTHROPIC_DEFAULT_OPUS_MODEL,ANTHROPIC_DEFAULT_SONNET_MODEL,ANTHROPIC_MODEL
+2026-04-23T09:00:50.362Z [DEBUG] [init] configureGlobalMTLS starting
+2026-04-23T09:00:50.363Z [DEBUG] [init] configureGlobalMTLS complete
+2026-04-23T09:00:50.363Z [DEBUG] [init] configureGlobalAgents starting
+2026-04-23T09:00:50.363Z [DEBUG] CA certs: stores=bundled,system, extraCertsPath=undefined
+2026-04-23T09:00:50.364Z [DEBUG] CA certs: Loaded 145 bundled root certificates
+2026-04-23T09:00:50.371Z [DEBUG] CA certs: Loaded 100 system CA certificates
+2026-04-23T09:00:50.372Z [DEBUG] mTLS: Creating HTTPS agent with custom certificates
+2026-04-23T09:00:50.372Z [DEBUG] [init] configureGlobalAgents complete
+2026-04-23T09:00:50.372Z [DEBUG] Using bash path: "E:\Git\bin\bash.exe"
+2026-04-23T09:00:50.374Z [DEBUG] Error log sink initialized
+2026-04-23T09:00:50.379Z [WARN] [3P telemetry] Event dropped (no event logger initialized): internal_error
+2026-04-23T09:00:50.379Z [ERROR] SyntaxError: SyntaxError: JSON Parse error: Unexpected token '.'
+    at <parse> (:0)
+    at parse (unknown)
+    at jc$ (B:/~BUN/root/src/entrypoints/cli.js:168:10030)
+    at _ (B:/~BUN/root/src/entrypoints/cli.js:130:19159)
+    at <anonymous> (B:/~BUN/root/src/entrypoints/cli.js:170:1502)
+    at <anonymous> (B:/~BUN/root/src/entrypoints/cli.js:18265:347)
+    at processTicksAndRejections (native:7:39)
+2026-04-23T09:00:50.382Z [DEBUG] [ToolSearch:optimistic] disabled: ANTHROPIC_BASE_URL=https://api.deepseek.com/anthropic is not a first-party Anthropic host. Set ENABLE_TOOL_SEARCH=true (or auto / auto:N) if your proxy forwards tool_reference blocks.
+2026-04-23T09:00:50.383Z [DEBUG] Applying permission update: Adding 1 allow rule(s) to destination 'userSettings': ["1"]
+2026-04-23T09:00:50.383Z [DEBUG] Applying permission update: Adding 1 allow rule(s) to destination 'projectSettings': ["mcp__codesys-sp20"]
+2026-04-23T09:00:50.383Z [DEBUG] Applying permission update: Adding 1 allow rule(s) to destination 'flagSettings': ["mcp__codesys-sp20"]
+2026-04-23T09:00:50.385Z [DEBUG] [STARTUP] Loading MCP configs...
+2026-04-23T09:00:50.400Z [DEBUG] [STARTUP] Running setup()...
+2026-04-23T09:00:50.403Z [DEBUG] Error log sink initialized
+2026-04-23T09:00:50.404Z [DEBUG] Loading skills from: managed=C:\Program Files\ClaudeCode\.claude\skills, user=C:\Users\hy\.claude\skills, project=[]
+2026-04-23T09:00:50.404Z [DEBUG] [bare] Skipping skill dir discovery (no --add-dir)
+2026-04-23T09:00:50.404Z [DEBUG] [STARTUP] setup() completed in 4ms
+2026-04-23T09:00:50.404Z [DEBUG] Cleared CA certificates cache
+2026-04-23T09:00:50.404Z [DEBUG] Cleared mTLS configuration cache
+2026-04-23T09:00:50.405Z [DEBUG] Cleared proxy agent cache
+2026-04-23T09:00:50.405Z [DEBUG] CA certs: stores=bundled,system, extraCertsPath=undefined
+2026-04-23T09:00:50.405Z [DEBUG] CA certs: Loaded 145 bundled root certificates
+2026-04-23T09:00:50.405Z [DEBUG] CA certs: Loaded 100 system CA certificates
+2026-04-23T09:00:50.405Z [DEBUG] mTLS: Creating HTTPS agent with custom certificates
+2026-04-23T09:00:50.433Z [DEBUG] getSkills returning: 0 skill dir commands, 0 plugin skills, 10 bundled skills, 0 builtin plugin skills
+2026-04-23T09:00:50.434Z [DEBUG] [STARTUP] Loading commands and agents...
+2026-04-23T09:00:50.436Z [DEBUG] [STARTUP] Commands and agents loaded in 2ms
+2026-04-23T09:00:50.437Z [DEBUG] Skipping startup prefetches, last ran 1776934850s ago
+2026-04-23T09:00:50.437Z [DEBUG] [STARTUP] MCP configs resolved in 6ms (awaited at +51ms)
+2026-04-23T09:00:50.438Z [DEBUG] Cleared CA certificates cache
+2026-04-23T09:00:50.439Z [DEBUG] Cleared mTLS configuration cache
+2026-04-23T09:00:50.439Z [DEBUG] Cleared proxy agent cache
+2026-04-23T09:00:50.439Z [DEBUG] CA certs: stores=bundled,system, extraCertsPath=undefined
+2026-04-23T09:00:50.439Z [DEBUG] CA certs: Loaded 145 bundled root certificates
+2026-04-23T09:00:50.439Z [DEBUG] CA certs: Loaded 100 system CA certificates
+2026-04-23T09:00:50.440Z [DEBUG] mTLS: Creating HTTPS agent with custom certificates
+2026-04-23T09:00:50.443Z [DEBUG] Fast mode unavailable: Fast mode is not available in the Agent SDK
+2026-04-23T09:00:50.447Z [DEBUG] MCP server "codesys-sp20": Starting connection with timeout of 30000ms
+2026-04-23T09:00:50.463Z [DEBUG] [Perfetto] initializePerfettoTracing called, env value: undefined
+2026-04-23T09:00:50.463Z [DEBUG] [3P telemetry] isTelemetryEnabled=false (CLAUDE_CODE_ENABLE_TELEMETRY=undefined)
+2026-04-23T09:00:50.480Z [DEBUG] [auto-mode] verifyAutoModeGateAccess: enabledState=opt-in disabledBySettings=false model=deepseek-chat modelSupported=false disableFastModeBreakerFires=false carouselAvailable=false canEnterAuto=false
+2026-04-23T09:00:50.480Z [WARN] auto mode disabled: model deepseek-chat does not support auto mode
+2026-04-23T09:00:50.481Z [DEBUG] [auto-mode] kickOutOfAutoIfNeeded applying: ctx.mode=default ctx.prePlanMode=undefined reason=model
+2026-04-23T09:00:50.552Z [DEBUG] Git remote URL: https://github.com/xiwen24936826/codesysAPItest.git
+2026-04-23T09:00:50.553Z [DEBUG] Parsed repository: github.com/xiwen24936826/codesysAPItest from URL: https://github.com/xiwen24936826/codesysAPItest.git
+2026-04-23T09:00:50.769Z [DEBUG] MCP server "codesys-sp20": Successfully connected (transport: stdio) in 325ms
+2026-04-23T09:00:50.769Z [DEBUG] MCP server "codesys-sp20": Connection established with capabilities: {"hasTools":true,"hasPrompts":false,"hasResources":false,"hasResourceSubscribe":false,"serverVersion":{"name":"codesys-mcp-local","title":"CODESYS MCP Local Server","version":"0.1.0"}}
+2026-04-23T09:00:50.770Z [DEBUG] [MCP] Server "codesys-sp20" connected with subscribe=false
+2026-04-23T09:00:50.787Z [DEBUG] [ScheduledTasks] scheduler start() — enabled=false, hasTasks=false
+2026-04-23T09:00:50.790Z [DEBUG] Tool search disabled: ToolSearchTool is not available (may have been disallowed via disallowedTools).
+2026-04-23T09:00:50.792Z [DEBUG] attribution header x-anthropic-billing-header: cc_version=2.1.118.c91; cc_entrypoint=sdk-cli; cch=00000;
+2026-04-23T09:00:50.793Z [DEBUG] Fast mode unavailable: Fast mode is not available in the Agent SDK
+2026-04-23T09:00:50.793Z [DEBUG] Fast mode unavailable: Fast mode is not available in the Agent SDK
+2026-04-23T09:00:50.794Z [DEBUG] [API:request] Creating client, ANTHROPIC_CUSTOM_HEADERS present: false, has Authorization header: false
+2026-04-23T09:00:50.794Z [DEBUG] [API:auth] OAuth token check starting
+2026-04-23T09:00:50.801Z [DEBUG] installed_plugins.json doesn't exist, returning empty V2 object
+2026-04-23T09:00:50.801Z [DEBUG] Found 0 plugins (0 enabled, 0 disabled)
+2026-04-23T09:00:50.802Z [DEBUG] Fast mode unavailable: Fast mode is not available in the Agent SDK
+2026-04-23T09:00:50.803Z [DEBUG] autocompact: tokens=30 threshold=167000 effectiveWindow=180000
+2026-04-23T09:00:50.804Z [DEBUG] Tool search disabled: ToolSearchTool is not available (may have been disallowed via disallowedTools).
+2026-04-23T09:00:50.805Z [DEBUG] attribution header x-anthropic-billing-header: cc_version=2.1.118.c91; cc_entrypoint=sdk-cli; cch=00000;
+2026-04-23T09:00:50.805Z [DEBUG] Fast mode unavailable: Fast mode is not available in the Agent SDK
+2026-04-23T09:00:50.806Z [DEBUG] Fast mode unavailable: Fast mode is not available in the Agent SDK
+2026-04-23T09:00:50.806Z [DEBUG] [API:request] Creating client, ANTHROPIC_CUSTOM_HEADERS present: false, has Authorization header: false
+2026-04-23T09:00:50.806Z [DEBUG] [API:auth] OAuth token check starting
+2026-04-23T09:00:50.806Z [DEBUG] [API:auth] OAuth token check complete
+2026-04-23T09:00:50.807Z [DEBUG] [API:auth] OAuth token check complete
+2026-04-23T09:00:50.807Z [DEBUG] Fast mode unavailable: Fast mode is not available in the Agent SDK
+2026-04-23T09:00:50.808Z [DEBUG] Fast mode unavailable: Fast mode is not available in the Agent SDK
+2026-04-23T09:00:50.810Z [DEBUG] [API REQUEST] /anthropic/v1/messages source=generate_session_title
+2026-04-23T09:00:50.811Z [DEBUG] [API REQUEST] /anthropic/v1/messages source=sdk
+2026-04-23T09:00:51.130Z [DEBUG] Prior session exited uncleanly: de2c3676-9682-4660-928a-082c349b7ec2 (v2.1.118)
+2026-04-23T09:00:51.266Z [ERROR] API error (attempt 1/11): 400 400 {"error":{"message":"Model Not Exist","type":"invalid_request_error","param":null,"code":"invalid_request_error"}}
+2026-04-23T09:00:51.269Z [ERROR] Error in API request: 400 {"error":{"message":"Model Not Exist","type":"invalid_request_error","param":null,"code":"invalid_request_error"}}
+2026-04-23T09:00:51.270Z [ERROR] "Error: Error: 400 {\"error\":{\"message\":\"Model Not Exist\",\"type\":\"invalid_request_error\",\"param\":null,\"code\":\"invalid_request_error\"}}\n    at generate (B:/~BUN/root/src/entrypoints/cli.js:11:54719)\n    at makeRequest (B:/~BUN/root/src/entrypoints/cli.js:50:4943)\n    at processTicksAndRejections (native:7:39)"
+2026-04-23T09:00:51.272Z [ERROR] "SyntaxError: SyntaxError: JSON Parse error: Unexpected identifier \"API\"\n    at <parse> (:0)\n    at parse (unknown)\n    at jc$ (B:/~BUN/root/src/entrypoints/cli.js:168:10030)\n    at _ (B:/~BUN/root/src/entrypoints/cli.js:130:19159)\n    at <anonymous> (B:/~BUN/root/src/entrypoints/cli.js:170:1502)\n    at t8H (B:/~BUN/root/src/entrypoints/cli.js:6322:476)\n    at processTicksAndRejections (native:7:39)"
+2026-04-23T09:00:51.610Z [DEBUG] Stream started - received first chunk
+2026-04-23T09:00:53.929Z [INFO] [Stall] tool_dispatch_start tool=mcp__codesys-sp20__list_project_objects toolUseId=call_00_wcPfaouF2dwRM6HBQVcYJ0bq permissionDecisionMs=0
+2026-04-23T09:00:53.930Z [DEBUG] MCP server "codesys-sp20": Calling MCP tool: list_project_objects
+2026-04-23T09:01:03.068Z [ERROR] 1P event logging: 40 events failed to export (status=403, code=ERR_BAD_REQUEST, Request failed with status code 403)
+2026-04-23T09:01:03.068Z [ERROR] [3P telemetry] OTEL diag error: {"message":"Failed to export 40 events (status=403, code=ERR_BAD_REQUEST, Request failed with status code 403)","originalLine":"446","originalColumn":"1668","line":"446","column":"1668","sourceURL":"B:/~BUN/root/src/entrypoints/cli.js","stack":"Error: Failed to export 40 events (status=403, code=ERR_BAD_REQUEST, Request failed with status code 403)\n    at doExport (B:/~BUN/root/src/entrypoints/cli.js:446:1668)\n    at processTicksAndRejections (native:7:39)","name":"Error"}
+2026-04-23T09:01:08.449Z [ERROR] MCP server "codesys-sp20" Unexpected error while listing project objects.
+2026-04-23T09:01:08.450Z [DEBUG] MCP server "codesys-sp20": Tool 'list_project_objects' failed after 14s: Unexpected error while listing project objects.
+2026-04-23T09:01:08.453Z [WARN] [Stall] tool_dispatch_end tool=mcp__codesys-sp20__list_project_objects toolUseId=call_00_wcPfaouF2dwRM6HBQVcYJ0bq outcome=error durationMs=14524
+2026-04-23T09:01:08.453Z [DEBUG] mcp__codesys-sp20__list_project_objects tool error (14524ms): Unexpected error while listing project objects.
+2026-04-23T09:01:08.453Z [ERROR] "McpToolCallError: McpToolCallError: Unexpected error while listing project objects.\n    at PV_ (B:/~BUN/root/src/entrypoints/cli.js:4792:63)\n    at processTicksAndRejections (native:7:39)"
+2026-04-23T09:01:08.458Z [DEBUG] autocompact: tokens=1620 threshold=167000 effectiveWindow=180000
+2026-04-23T09:01:08.459Z [DEBUG] Tool search disabled: ToolSearchTool is not available (may have been disallowed via disallowedTools).
+2026-04-23T09:01:08.460Z [DEBUG] attribution header x-anthropic-billing-header: cc_version=2.1.118.c91; cc_entrypoint=sdk-cli; cch=00000;
+2026-04-23T09:01:08.461Z [DEBUG] Fast mode unavailable: Fast mode is not available in the Agent SDK
+2026-04-23T09:01:08.461Z [DEBUG] Fast mode unavailable: Fast mode is not available in the Agent SDK
+2026-04-23T09:01:08.461Z [DEBUG] [API:request] Creating client, ANTHROPIC_CUSTOM_HEADERS present: false, has Authorization header: false
+2026-04-23T09:01:08.462Z [DEBUG] [API:auth] OAuth token check starting
+2026-04-23T09:01:08.462Z [DEBUG] [API:auth] OAuth token check complete
+2026-04-23T09:01:08.462Z [DEBUG] Fast mode unavailable: Fast mode is not available in the Agent SDK
+2026-04-23T09:01:08.463Z [DEBUG] [API REQUEST] /anthropic/v1/messages source=sdk
+2026-04-23T09:01:08.833Z [DEBUG] Stream started - received first chunk
+2026-04-23T09:01:10.102Z [DEBUG] Fast mode unavailable: Fast mode is not available in the Agent SDK
+2026-04-23T09:01:10.103Z [DEBUG] MCP server "codesys-sp20": Sending SIGINT to MCP server process
+2026-04-23T09:01:10.131Z [DEBUG] MCP server "codesys-sp20": STDIO connection closed after 19s (cleanly)
+2026-04-23T09:01:10.132Z [DEBUG] MCP server "codesys-sp20": Cleared connection cache for reconnection
+2026-04-23T09:01:10.169Z [DEBUG] MCP server "codesys-sp20": MCP server process exited cleanly
+2026-04-23T09:01:10.174Z [DEBUG] Metrics export disabled by organization setting
+2026-04-23T09:01:10.174Z [DEBUG] Failed to check metrics opt-out status: Auth error: No API key available
+2026-04-23T09:01:10.174Z [ERROR] "Error: Error: Auth error: No API key available\n    at dpf (B:/~BUN/root/src/entrypoints/cli.js:2750:34205)\n    at async hc (B:/~BUN/root/src/entrypoints/cli.js:441:4989)\n    at async Qpf (B:/~BUN/root/src/entrypoints/cli.js:2750:34474)\n    at async <anonymous> (B:/~BUN/root/src/entrypoints/cli.js:130:18627)\n    at async ylK (B:/~BUN/root/src/entrypoints/cli.js:2750:34765)\n    at processTicksAndRejections (native:7:39)"
+2026-04-23T09:01:10.175Z [DEBUG] BigQuery metrics exporter flush complete
+2026-04-23T09:01:10.175Z [DEBUG] BigQuery metrics exporter flush complete
+2026-04-23T09:01:10.175Z [DEBUG] BigQuery metrics exporter shutdown complete
+2026-04-23T09:01:10.418Z [ERROR] 1P event logging: 16 events failed to export (status=403, code=ERR_BAD_REQUEST, Request failed with status code 403)
+2026-04-23T09:01:10.418Z [ERROR] [3P telemetry] OTEL diag error: {"message":"Failed to export 16 events (status=403, code=ERR_BAD_REQUEST, Request failed with status code 403)","originalLine":"446","originalColumn":"1668","line":"446","column":"1668","sourceURL":"B:/~BUN/root/src/entrypoints/cli.js","stack":"Error: Failed to export 16 events (status=403, code=ERR_BAD_REQUEST, Request failed with status code 403)\n    at doExport (B:/~BUN/root/src/entrypoints/cli.js:446:1668)\n    at processTicksAndRejections (native:7:39)","name":"Error"}

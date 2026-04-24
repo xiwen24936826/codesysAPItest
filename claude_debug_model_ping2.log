@@ -1,0 +1,123 @@
+2026-04-23T08:53:39.454Z [DEBUG] MDM settings load completed in 24ms
+2026-04-23T08:53:39.472Z [DEBUG] Broken symlink or missing file encountered for settings.json at path: C:\Program Files\ClaudeCode\managed-settings.json
+2026-04-23T08:53:39.476Z [DEBUG] Broken symlink or missing file encountered for settings.json at path: D:\工作资料\codesysAPItest\.claude\settings.local.json
+2026-04-23T08:53:39.476Z [DEBUG] CA certs: Config fallback - globalEnv keys: , settingsEnv keys: ANTHROPIC_AUTH_TOKEN,ANTHROPIC_BASE_URL,ANTHROPIC_DEFAULT_HAIKU_MODEL,ANTHROPIC_DEFAULT_OPUS_MODEL,ANTHROPIC_DEFAULT_SONNET_MODEL,ANTHROPIC_MODEL
+2026-04-23T08:53:39.477Z [DEBUG] [init] configureGlobalMTLS starting
+2026-04-23T08:53:39.477Z [DEBUG] [init] configureGlobalMTLS complete
+2026-04-23T08:53:39.477Z [DEBUG] [init] configureGlobalAgents starting
+2026-04-23T08:53:39.478Z [DEBUG] CA certs: stores=bundled,system, extraCertsPath=undefined
+2026-04-23T08:53:39.478Z [DEBUG] CA certs: Loaded 145 bundled root certificates
+2026-04-23T08:53:39.484Z [DEBUG] CA certs: Loaded 100 system CA certificates
+2026-04-23T08:53:39.485Z [DEBUG] mTLS: Creating HTTPS agent with custom certificates
+2026-04-23T08:53:39.485Z [DEBUG] [init] configureGlobalAgents complete
+2026-04-23T08:53:39.485Z [DEBUG] Using bash path: "E:\Git\bin\bash.exe"
+2026-04-23T08:53:39.487Z [DEBUG] Error log sink initialized
+2026-04-23T08:53:39.491Z [DEBUG] Applying permission update: Adding 1 allow rule(s) to destination 'userSettings': ["1"]
+2026-04-23T08:53:39.491Z [DEBUG] Applying permission update: Adding 1 allow rule(s) to destination 'projectSettings': ["mcp__codesys-sp20"]
+2026-04-23T08:53:39.494Z [DEBUG] [claudeai-mcp] No access token
+2026-04-23T08:53:39.494Z [DEBUG] [STARTUP] Loading MCP configs...
+2026-04-23T08:53:39.512Z [DEBUG] installed_plugins.json doesn't exist, returning empty V2 object
+2026-04-23T08:53:39.513Z [DEBUG] Found 0 plugins (0 enabled, 0 disabled)
+2026-04-23T08:53:39.514Z [DEBUG] [STARTUP] Running setup()...
+2026-04-23T08:53:39.517Z [DEBUG] Loading skills from: managed=C:\Program Files\ClaudeCode\.claude\skills, user=C:\Users\hy\.claude\skills, project=[]
+2026-04-23T08:53:39.518Z [DEBUG] Error log sink initialized
+2026-04-23T08:53:39.519Z [DEBUG] getPluginSkills: Processing 0 enabled plugins
+2026-04-23T08:53:39.519Z [DEBUG] Total plugin skills loaded: 0
+2026-04-23T08:53:39.519Z [DEBUG] Total plugin commands loaded: 0
+2026-04-23T08:53:39.520Z [DEBUG] Registered 0 hooks from 0 plugins
+2026-04-23T08:53:39.520Z [DEBUG] Failed to stat directory C:\Program Files\ClaudeCode\.claude\commands: ENOENT: no such file or directory, stat 'C:\Program Files\ClaudeCode\.claude\commands'
+2026-04-23T08:53:39.520Z [DEBUG] Failed to stat directory C:\Users\hy\.claude\commands: ENOENT: no such file or directory, stat 'C:\Users\hy\.claude\commands'
+2026-04-23T08:53:39.521Z [DEBUG] Loaded 0 unique skills (0 unconditional, 0 conditional, managed: 0, user: 0, project: 0, additional: 0, legacy commands: 0)
+2026-04-23T08:53:39.521Z [DEBUG] getSkills returning: 0 skill dir commands, 0 plugin skills, 10 bundled skills, 0 builtin plugin skills
+2026-04-23T08:53:39.522Z [DEBUG] Failed to stat directory C:\Program Files\ClaudeCode\.claude\agents: ENOENT: no such file or directory, stat 'C:\Program Files\ClaudeCode\.claude\agents'
+2026-04-23T08:53:39.522Z [DEBUG] Failed to stat directory C:\Users\hy\.claude\agents: ENOENT: no such file or directory, stat 'C:\Users\hy\.claude\agents'
+2026-04-23T08:53:39.522Z [DEBUG] Total plugin agents loaded: 0
+2026-04-23T08:53:39.524Z [DEBUG] [STARTUP] setup() completed in 10ms
+2026-04-23T08:53:39.525Z [DEBUG] Cleared CA certificates cache
+2026-04-23T08:53:39.525Z [DEBUG] Cleared mTLS configuration cache
+2026-04-23T08:53:39.525Z [DEBUG] Cleared proxy agent cache
+2026-04-23T08:53:39.525Z [DEBUG] CA certs: stores=bundled,system, extraCertsPath=undefined
+2026-04-23T08:53:39.525Z [DEBUG] CA certs: Loaded 145 bundled root certificates
+2026-04-23T08:53:39.525Z [DEBUG] CA certs: Loaded 100 system CA certificates
+2026-04-23T08:53:39.525Z [DEBUG] mTLS: Creating HTTPS agent with custom certificates
+2026-04-23T08:53:39.544Z [DEBUG] [STARTUP] Loading commands and agents...
+2026-04-23T08:53:39.545Z [DEBUG] [ToolSearch:optimistic] disabled: ANTHROPIC_BASE_URL=https://api.deepseek.com/anthropic is not a first-party Anthropic host. Set ENABLE_TOOL_SEARCH=true (or auto / auto:N) if your proxy forwards tool_reference blocks.
+2026-04-23T08:53:39.546Z [DEBUG] [STARTUP] Commands and agents loaded in 2ms
+2026-04-23T08:53:39.546Z [DEBUG] [LSP MANAGER] initializeLspServerManager() called
+2026-04-23T08:53:39.546Z [DEBUG] [LSP MANAGER] Created manager instance, state=pending
+2026-04-23T08:53:39.546Z [DEBUG] [LSP MANAGER] Starting async initialization (generation 1)
+2026-04-23T08:53:39.547Z [DEBUG] Starting background startup prefetches
+2026-04-23T08:53:39.547Z [DEBUG] [Bootstrap] Skipped: no usable OAuth or API key
+2026-04-23T08:53:39.547Z [DEBUG] [STARTUP] MCP configs resolved in 19ms (awaited at +53ms)
+2026-04-23T08:53:39.549Z [DEBUG] Total LSP servers loaded: 0
+2026-04-23T08:53:39.550Z [DEBUG] Initialized versioned plugins system with 0 plugins
+2026-04-23T08:53:39.550Z [DEBUG] [LSP SERVER MANAGER] getAllLspServers returned 0 server(s)
+2026-04-23T08:53:39.550Z [DEBUG] LSP manager initialized with 0 servers
+2026-04-23T08:53:39.554Z [DEBUG] MCP server "codesys-sp20": Starting connection with timeout of 30000ms
+2026-04-23T08:53:39.570Z [DEBUG] Cleared CA certificates cache
+2026-04-23T08:53:39.570Z [DEBUG] Cleared mTLS configuration cache
+2026-04-23T08:53:39.570Z [DEBUG] Cleared proxy agent cache
+2026-04-23T08:53:39.571Z [DEBUG] CA certs: stores=bundled,system, extraCertsPath=undefined
+2026-04-23T08:53:39.571Z [DEBUG] CA certs: Loaded 145 bundled root certificates
+2026-04-23T08:53:39.571Z [DEBUG] CA certs: Loaded 100 system CA certificates
+2026-04-23T08:53:39.571Z [DEBUG] mTLS: Creating HTTPS agent with custom certificates
+2026-04-23T08:53:39.572Z [DEBUG] LSP server manager initialized successfully
+2026-04-23T08:53:39.572Z [DEBUG] LSP notification handlers registered successfully for all 0 server(s)
+2026-04-23T08:53:39.577Z [DEBUG] Fast mode unavailable: Fast mode is not available in the Agent SDK
+2026-04-23T08:53:39.578Z [DEBUG] [Perfetto] initializePerfettoTracing called, env value: undefined
+2026-04-23T08:53:39.579Z [DEBUG] [3P telemetry] isTelemetryEnabled=false (CLAUDE_CODE_ENABLE_TELEMETRY=undefined)
+2026-04-23T08:53:39.595Z [DEBUG] [auto-mode] verifyAutoModeGateAccess: enabledState=opt-in disabledBySettings=false model=deepseek-chat modelSupported=false disableFastModeBreakerFires=false carouselAvailable=false canEnterAuto=false
+2026-04-23T08:53:39.596Z [WARN] auto mode disabled: model deepseek-chat does not support auto mode
+2026-04-23T08:53:39.596Z [DEBUG] [auto-mode] kickOutOfAutoIfNeeded applying: ctx.mode=default ctx.prePlanMode=undefined reason=model
+2026-04-23T08:53:39.625Z [DEBUG] Git remote URL: https://github.com/xiwen24936826/codesysAPItest.git
+2026-04-23T08:53:39.626Z [DEBUG] Parsed repository: github.com/xiwen24936826/codesysAPItest from URL: https://github.com/xiwen24936826/codesysAPItest.git
+2026-04-23T08:53:39.703Z [DEBUG] Ripgrep first use test: PASSED (mode=embedded, path=C:\Users\hy\AppData\Roaming\npm\node_modules\@anthropic-ai\claude-code\bin\claude.exe)
+2026-04-23T08:53:39.703Z [DEBUG] rg error (signal=undefined, code=2, stderr: rg: C:\Users\hy\.claude\plugins\cache: IO error for operation on C:\Users\hy\.claude\plugins\cache: 系统找不到指定的文件。 (os error 2)
+), 0 results
+2026-04-23T08:53:39.912Z [DEBUG] MCP server "codesys-sp20": Successfully connected (transport: stdio) in 362ms
+2026-04-23T08:53:39.913Z [DEBUG] MCP server "codesys-sp20": Connection established with capabilities: {"hasTools":true,"hasPrompts":false,"hasResources":false,"hasResourceSubscribe":false,"serverVersion":{"name":"codesys-mcp-local","title":"CODESYS MCP Local Server","version":"0.1.0"}}
+2026-04-23T08:53:39.913Z [DEBUG] [MCP] Server "codesys-sp20" connected with subscribe=false
+2026-04-23T08:53:39.913Z [WARN] [3P telemetry] Event dropped (no event logger initialized): mcp_server_connection
+2026-04-23T08:53:39.939Z [DEBUG] [ScheduledTasks] scheduler start() — enabled=false, hasTasks=false
+2026-04-23T08:53:39.940Z [DEBUG] installPluginsForHeadless: starting
+2026-04-23T08:53:39.941Z [DEBUG] installPluginsForHeadless: no marketplaces declared
+2026-04-23T08:53:39.945Z [DEBUG] Failed to stat directory C:\Program Files\ClaudeCode\.claude\output-styles: ENOENT: no such file or directory, stat 'C:\Program Files\ClaudeCode\.claude\output-styles'
+2026-04-23T08:53:39.945Z [DEBUG] Failed to stat directory C:\Users\hy\.claude\output-styles: ENOENT: no such file or directory, stat 'C:\Users\hy\.claude\output-styles'
+2026-04-23T08:53:39.945Z [DEBUG] Total plugin output styles loaded: 0
+2026-04-23T08:53:39.947Z [DEBUG] LSP Diagnostics: getLSPDiagnosticAttachments called
+2026-04-23T08:53:39.948Z [DEBUG] LSP Diagnostics: Checking registry - 0 pending
+2026-04-23T08:53:39.948Z [DEBUG] Hooks: Found 0 total hooks in registry
+2026-04-23T08:53:39.948Z [DEBUG] Sending 9 skills via attachment (initial, 9 total sent)
+2026-04-23T08:53:39.948Z [DEBUG] Hooks: checkForNewResponses returning 0 responses
+2026-04-23T08:53:39.954Z [DEBUG] Watching for changes in setting files C:\Users\hy\.claude\settings.json, D:\工作资料\codesysAPItest\.claude\settings.json, D:\工作资料\codesysAPItest\.claude\settings.local.json...
+2026-04-23T08:53:39.989Z [DEBUG] Fast mode unavailable: Fast mode is not available in the Agent SDK
+2026-04-23T08:53:39.993Z [DEBUG] autocompact: tokens=655 threshold=167000 effectiveWindow=180000
+2026-04-23T08:53:39.994Z [DEBUG] Tool search disabled: ToolSearchTool is not available (may have been disallowed via disallowedTools).
+2026-04-23T08:53:40.004Z [DEBUG] attribution header x-anthropic-billing-header: cc_version=2.1.118.a36; cc_entrypoint=sdk-cli; cch=00000;
+2026-04-23T08:53:40.005Z [DEBUG] Fast mode unavailable: Fast mode is not available in the Agent SDK
+2026-04-23T08:53:40.005Z [DEBUG] Fast mode unavailable: Fast mode is not available in the Agent SDK
+2026-04-23T08:53:40.006Z [DEBUG] [API:request] Creating client, ANTHROPIC_CUSTOM_HEADERS present: false, has Authorization header: false
+2026-04-23T08:53:40.006Z [DEBUG] [API:auth] OAuth token check starting
+2026-04-23T08:53:40.007Z [DEBUG] [API:auth] OAuth token check complete
+2026-04-23T08:53:40.008Z [DEBUG] Fast mode unavailable: Fast mode is not available in the Agent SDK
+2026-04-23T08:53:40.010Z [DEBUG] [API REQUEST] /anthropic/v1/messages source=sdk
+2026-04-23T08:53:40.549Z [ERROR] Failed to fetch MCP registry: Request failed with status code 403
+2026-04-23T08:53:41.199Z [DEBUG] Stream started - received first chunk
+2026-04-23T08:53:43.295Z [DEBUG] Fast mode unavailable: Fast mode is not available in the Agent SDK
+2026-04-23T08:53:43.296Z [DEBUG] MCP server "codesys-sp20": Sending SIGINT to MCP server process
+2026-04-23T08:53:43.329Z [DEBUG] MCP server "codesys-sp20": STDIO connection closed after 3s (cleanly)
+2026-04-23T08:53:43.329Z [DEBUG] MCP server "codesys-sp20": Cleared connection cache for reconnection
+2026-04-23T08:53:43.349Z [DEBUG] MCP server "codesys-sp20": MCP server process exited cleanly
+2026-04-23T08:53:43.352Z [DEBUG] LSP server manager shut down successfully
+2026-04-23T08:53:43.354Z [DEBUG] Metrics export disabled by organization setting
+2026-04-23T08:53:43.354Z [DEBUG] Failed to check metrics opt-out status: Auth error: No API key available
+2026-04-23T08:53:43.355Z [ERROR] Error: Error: Auth error: No API key available
+    at dpf (B:/~BUN/root/src/entrypoints/cli.js:2750:34205)
+    at async hc (B:/~BUN/root/src/entrypoints/cli.js:441:4989)
+    at async Qpf (B:/~BUN/root/src/entrypoints/cli.js:2750:34474)
+    at async <anonymous> (B:/~BUN/root/src/entrypoints/cli.js:130:18627)
+    at async ylK (B:/~BUN/root/src/entrypoints/cli.js:2750:34765)
+    at processTicksAndRejections (native:7:39)
+2026-04-23T08:53:43.355Z [DEBUG] BigQuery metrics exporter flush complete
+2026-04-23T08:53:43.355Z [DEBUG] BigQuery metrics exporter flush complete
+2026-04-23T08:53:43.356Z [DEBUG] BigQuery metrics exporter shutdown complete
