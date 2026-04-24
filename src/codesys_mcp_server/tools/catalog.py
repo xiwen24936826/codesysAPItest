@@ -22,7 +22,10 @@ class ToolCatalogEntry:
 
     def to_public_dict(self) -> dict[str, Any]:
         """Return a machine-readable public view of the catalog entry."""
-        return asdict(self)
+        payload = asdict(self)
+        payload["code"] = tool_code_for(self.name)
+        payload["category"] = tool_category_for(self.name)
+        return payload
 
 
 @dataclass(frozen=True)
@@ -48,6 +51,44 @@ def _object_schema(
         "properties": properties,
         "additionalProperties": False,
     }
+
+
+TOOL_CODE_BY_NAME: dict[str, str] = {
+    "create_project": "PRJ-001",
+    "open_project": "PRJ-002",
+    "list_project_objects": "PRJ-003",
+    "find_project_objects": "PRJ-004",
+    "save_project": "PRJ-005",
+    "add_controller_device": "PRJ-006",
+    "create_program": "POU-001",
+    "create_function_block": "POU-002",
+    "create_function": "POU-003",
+    "read_textual_declaration": "POU-004",
+    "read_textual_implementation": "POU-005",
+    "replace_text_document": "POU-006",
+    "append_text_document": "POU-007",
+    "insert_text_document": "POU-008",
+    "scan_network_devices": "DEV-001",
+}
+
+
+TOOL_CATEGORY_BY_NAME: dict[str, str] = {
+    "create_project": "projects",
+    "open_project": "projects",
+    "list_project_objects": "projects",
+    "find_project_objects": "projects",
+    "save_project": "projects",
+    "add_controller_device": "projects",
+    "create_program": "pous",
+    "create_function_block": "pous",
+    "create_function": "pous",
+    "read_textual_declaration": "pous",
+    "read_textual_implementation": "pous",
+    "replace_text_document": "pous",
+    "append_text_document": "pous",
+    "insert_text_document": "pous",
+    "scan_network_devices": "devices",
+}
 
 
 TOOL_CATALOG: tuple[ToolCatalogEntry, ...] = (
@@ -354,6 +395,16 @@ TOOL_CATALOG_BY_NAME = {entry.name: entry for entry in TOOL_CATALOG}
 def get_tool_catalog() -> tuple[ToolCatalogEntry, ...]:
     """Return the canonical immutable tool catalog."""
     return TOOL_CATALOG
+
+
+def tool_code_for(tool_name: str) -> str:
+    """Return the stable display code for one tool."""
+    return TOOL_CODE_BY_NAME.get(tool_name, "UNMAPPED")
+
+
+def tool_category_for(tool_name: str) -> str:
+    """Return the stable business category for one tool."""
+    return TOOL_CATEGORY_BY_NAME.get(tool_name, "uncategorized")
 
 
 def export_tool_catalog() -> list[dict[str, Any]]:

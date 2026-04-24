@@ -8,6 +8,7 @@ from pathlib import Path
 import json
 import os
 import sys
+import tempfile
 import unittest
 from unittest.mock import patch
 
@@ -22,34 +23,48 @@ from codesys_mcp_server.server.cli import main
 
 
 class ServerCliTests(unittest.TestCase):
-    def test_list_tools_prints_registered_tools(self) -> None:
+    def test_list_tools_prints_summary_table_by_default(self) -> None:
         stream = StringIO()
         with redirect_stdout(stream):
             exit_code = main(["list-tools"])
         self.assertEqual(exit_code, 0)
+        output = stream.getvalue()
+        self.assertIn("| Category | Name | Function | Code |", output)
+        self.assertIn("create_program", output)
+        self.assertIn("POU-001", output)
+
+    def test_list_tools_json_view_prints_machine_readable_catalog(self) -> None:
+        stream = StringIO()
+        with redirect_stdout(stream):
+            exit_code = main(["list-tools", "--view", "json"])
+        self.assertEqual(exit_code, 0)
         payload = json.loads(stream.getvalue())
         names = [tool["name"] for tool in payload]
         self.assertIn("create_program", names)
+        create_program_tool = next(tool for tool in payload if tool["name"] == "create_program")
+        self.assertEqual(create_program_tool["code"], "POU-001")
+        self.assertEqual(create_program_tool["category"], "pous")
 
     def test_call_tool_returns_structured_payload(self) -> None:
         stream = StringIO()
-        with redirect_stdout(stream):
-            exit_code = main(
-                [
-                    "call-tool",
-                    "create_project",
-                    "--arguments",
-                    json.dumps(
-                        {
-                            "project_path": "D:/Projects/demo.project",
-                            "project_mode": "empty",
-                            "set_as_primary": True,
-                        }
-                    ),
-                    "--request-id",
-                    "cli-001",
-                ]
-            )
+        with tempfile.TemporaryDirectory() as temp_dir:
+            with redirect_stdout(stream):
+                exit_code = main(
+                    [
+                        "call-tool",
+                        "create_project",
+                        "--arguments",
+                        json.dumps(
+                            {
+                                "project_path": str(Path(temp_dir) / "demo.project"),
+                                "project_mode": "empty",
+                                "set_as_primary": True,
+                            }
+                        ),
+                        "--request-id",
+                        "cli-001",
+                    ]
+                )
         self.assertEqual(exit_code, 0)
         payload = json.loads(stream.getvalue())
         self.assertTrue(payload["ok"])
@@ -97,7 +112,7 @@ class ServerCliTests(unittest.TestCase):
         }
         try:
             with redirect_stdout(stream):
-                exit_code = main(["--log-level", "DEBUG", "--log-json", "list-tools"])
+                exit_code = main(["--log-level", "DEBUG", "--log-json", "list-tools", "--view", "json"])
         finally:
             for key, value in previous.items():
                 if value is None:
@@ -112,7 +127,13 @@ class ServerCliTests(unittest.TestCase):
         fake_runtime = type(
             "FakeRuntime",
             (),
-            {"list_tools": staticmethod(lambda: []), "serve_stdio": staticmethod(lambda: 0), "serve_jsonl": staticmethod(lambda: 0), "call_tool": staticmethod(lambda **kwargs: {"ok": True})},
+            {
+                "list_tools": staticmethod(lambda: []),
+                "export_tool_catalog": staticmethod(lambda: []),
+                "serve_stdio": staticmethod(lambda: 0),
+                "serve_jsonl": staticmethod(lambda: 0),
+                "call_tool": staticmethod(lambda **kwargs: {"ok": True}),
+            },
         )()
         with patch(
             "codesys_mcp_server.server.cli.create_runtime",

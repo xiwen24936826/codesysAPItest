@@ -18,7 +18,13 @@ def build_parser() -> argparse.ArgumentParser:
     )
     subparsers = parser.add_subparsers(dest="command", required=True)
 
-    subparsers.add_parser("list-tools", help="List registered tools.")
+    list_parser = subparsers.add_parser("list-tools", help="List registered tools.")
+    list_parser.add_argument(
+        "--view",
+        default="summary",
+        choices=["summary", "json"],
+        help="summary prints a concise catalog table; json prints the machine-readable catalog.",
+    )
 
     call_parser = subparsers.add_parser("call-tool", help="Call one tool with JSON arguments.")
     call_parser.add_argument("tool_name", help="Registered tool name.")
@@ -77,8 +83,11 @@ def main(argv: Sequence[str] | None = None) -> int:
     )
 
     if args.command == "list-tools":
-        payload = runtime.list_tools()
-        print(json.dumps(payload, ensure_ascii=False, indent=2))
+        payload = runtime.export_tool_catalog()
+        if args.view == "json":
+            print(json.dumps(payload, ensure_ascii=False, indent=2))
+        else:
+            print(_render_tool_catalog_summary(payload))
         return 0
 
     if args.command == "serve-stdio":
@@ -95,6 +104,32 @@ def main(argv: Sequence[str] | None = None) -> int:
     )
     print(json.dumps(result, ensure_ascii=False, indent=2))
     return 0 if result.get("ok") else 1
+
+
+def _render_tool_catalog_summary(catalog: list[dict[str, object]]) -> str:
+    """Render a concise terminal-friendly summary for the tool catalog."""
+    ordered = sorted(
+        catalog,
+        key=lambda item: (
+            str(item.get("category", "")),
+            str(item.get("code", "")),
+            str(item.get("name", "")),
+        ),
+    )
+    lines = [
+        "| Category | Name | Function | Code |",
+        "| --- | --- | --- | --- |",
+    ]
+    for item in ordered:
+        lines.append(
+            "| {category} | {name} | {description} | {code} |".format(
+                category=item.get("category", ""),
+                name=item.get("name", ""),
+                description=item.get("description", ""),
+                code=item.get("code", ""),
+            )
+        )
+    return "\n".join(lines)
 
 
 if __name__ == "__main__":
