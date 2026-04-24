@@ -292,3 +292,163 @@ Current recommended tool order for new POU work is:
 2. `list_project_objects`
 3. `create_program` / `create_function_block` / `create_function`
 4. textual read or write tools
+
+## 2026-04-24 Devices And Online Action Plan
+
+This repository now starts a dedicated implementation track for:
+
+- `services/devices/`
+- `services/online/`
+
+The goal is to support:
+
+1. network scan
+2. offline device communication binding
+3. online device connection
+4. PLC login
+5. application start/stop/state query
+6. online variable value read/write
+
+### Confirmed Scripting API Base
+
+Validated official API directions for this track:
+
+1. `ScriptGateway.perform_network_scan()`
+2. `ScriptGateway.get_cached_network_scan_result()`
+3. `ScriptScanTargetDescription.*`
+4. `ScriptDeviceObject.set_gateway_and_address()`
+5. `ScriptDeviceObject.set_gateway_and_device_name()`
+6. `ScriptDeviceObject.set_gateway_and_ip_address()`
+7. `ScriptOnline.create_online_device(...)`
+8. `ScriptOnlineDevice.connect()`
+9. `ScriptOnlineDevice.disconnect()`
+10. `ScriptOnline.set_default_credentials(...)`
+11. `ScriptOnline.set_specific_credentials(...)`
+12. `ScriptOnlineApplication.login(...)`
+13. `ScriptOnlineApplication.start()`
+14. `ScriptOnlineApplication.stop()`
+15. `ScriptOnlineApplication.application_state`
+16. `ScriptOnlineApplication.operation_state`
+17. `ScriptOnlineApplication.read_value()`
+18. `ScriptOnlineApplication.read_values()`
+19. `ScriptOnlineApplication.set_prepared_value()`
+20. `ScriptOnlineApplication.write_prepared_values()`
+
+### Track Split
+
+#### Devices track
+
+Owns:
+
+- network scan
+- device communication binding
+
+Planned MCP tools:
+
+1. `scan_network_devices`
+2. `bind_device_communication`
+
+Rules:
+
+- `scan_network_devices` stays separate from project-tree traversal
+- communication binding must target an already resolved project device object
+- binding mode should be explicit and support:
+  - gateway + address
+  - gateway + device name
+  - gateway + ip address
+
+Current status:
+
+- `scan_network_devices` is already implemented in the repository
+- it is integrated through:
+  - `services/online/scan_network_devices.py`
+  - `core/project_adapter.py`
+  - `core/codesys_bridge.py`
+  - `server/in_memory_backend.py`
+  - `tools/factory.py`
+- unit coverage exists in:
+  - `tests/unit/test_scan_network_devices.py`
+
+Current completion judgment:
+
+- this tool is functionally implemented at service / backend / runtime level
+- it is no longer a placeholder module
+- real target-environment validation can continue later, but the MCP tool itself is already built
+
+#### Online track
+
+Owns:
+
+- online connect
+- credentials
+- login
+- run control
+- online value read/write
+
+Planned MCP tools:
+
+1. `connect_online_device`
+2. `login_application`
+3. `start_application`
+4. `stop_application`
+5. `get_application_state`
+6. `read_online_value`
+7. `read_online_values`
+8. `write_online_values`
+
+Rules:
+
+- online value read/write should not be implemented as an isolated shortcut
+- the implementation must respect the dependency chain:
+  - resolve project and target device
+  - bind communication if needed
+  - connect online device
+  - login application
+  - ensure monitoring-capable state
+  - then read or write online values
+- prefer stateless MCP tool design for Phase 1 and Phase 2:
+  - each tool should complete its own minimum safe setup path
+  - do not introduce a fragile long-lived client-side session model first
+
+### Recommended Implementation Order
+
+The agreed order for the next slices is:
+
+1. keep `scan_network_devices` and treat it as completed baseline
+2. implement `bind_device_communication`
+3. implement `connect_online_device`
+4. implement `login_application`
+5. implement `start_application`
+6. implement `stop_application`
+7. implement `get_application_state`
+8. implement `read_online_value`
+9. implement `read_online_values`
+10. implement `write_online_values`
+
+### Output Contract Expectations
+
+For devices:
+
+- return gateway identity
+- return structured scanned target list
+- return normalized target fields when available:
+  - `device_name`
+  - `type_name`
+  - `vendor_name`
+  - `device_id`
+  - `address`
+  - `parent_address`
+  - `block_driver`
+  - `block_driver_address`
+
+For online tools:
+
+- always return connection/login/run-state context
+- `start_application` and `stop_application` should report before/after state
+- online write tools should report which expressions were prepared and written
+
+### Important Constraints
+
+1. online variable read APIs depend on a monitoring-capable online state
+2. communication binding requires a correctly resolved project device object
+3. client routing should continue to prefer scan/resolve first, then connect/login, then online value operations
