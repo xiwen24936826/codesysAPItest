@@ -219,27 +219,6 @@ def raise_validation_error(
     raise error_cls(message=message, details=details, code=code)
 
 
-def require_ascii_text(
-    field: str,
-    value: str,
-    error_cls: type[Exception],
-) -> str:
-    try:
-        value.encode("ascii")
-    except UnicodeEncodeError:
-        raise error_cls(
-            message=(
-                "Field '%s' must contain ASCII-only source text. "
-                "Non-ASCII comments or literals are currently not supported "
-                "by the real IDE automation path."
-            )
-            % field,
-            details={"field": field, "value": value},
-            code="NON_ASCII_TEXT_UNSUPPORTED",
-        )
-    return value
-
-
 def read_document_text(
     adapter: Any,
     project_path: str,

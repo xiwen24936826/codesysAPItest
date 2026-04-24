@@ -137,8 +137,8 @@ The agreed implementation order is:
 2. Keep the current server-side automatic `Application` fallback as a safety net,
    but treat scan-first as the recommended workflow.
 3. Add end-to-end UTF-8 handling and read-after-write validation for textual
-   document operations. Until that path is proven stable, keep the real IDE write
-   path on ASCII-only source text.
+   document operations. Keep the real IDE project path on ASCII-only filesystem
+   paths, but validate whether UTF-8 source comments can safely round-trip.
 4. Add declaration-plus-implementation source validation before writing generated
    POU code, so undeclared identifiers are rejected before the IDE project is
    modified.
@@ -166,8 +166,8 @@ The repository now also enforces these write-path rules for POU source text:
    missing from the current declaration
 3. declaration writes are rejected before save if they would break the current
    implementation
-4. current real-IDE write path still stays on ASCII-only source text until
-   end-to-end UTF-8 validation is proven stable
+4. UTF-8 source comments are now validated on ASCII project paths; only
+   project filesystem paths still remain ASCII-only
 
 ## 2026-04-23 Device Tree Scan Enhancement Plan
 

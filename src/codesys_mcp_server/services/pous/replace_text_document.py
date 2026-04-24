@@ -11,7 +11,6 @@ from ._common import (
     execute_text_write_flow,
     error_response,
     require_absolute_path,
-    require_ascii_text,
     require_document_kind,
     require_non_empty_string,
     success_response,
@@ -164,11 +163,6 @@ def _validate_request(request: dict[str, Any]) -> ReplaceTextDocumentRequest:
             message="Field 'new_text' must be a string.",
             details={"field": "new_text", "value": new_text},
         )
-    new_text = require_ascii_text(
-        "new_text",
-        new_text,
-        ReplaceTextDocumentValidationError,
-    )
 
     return ReplaceTextDocumentRequest(
         project_path=require_absolute_path(

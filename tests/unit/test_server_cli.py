@@ -29,9 +29,10 @@ class ServerCliTests(unittest.TestCase):
             exit_code = main(["list-tools"])
         self.assertEqual(exit_code, 0)
         output = stream.getvalue()
-        self.assertIn("| Category | Name | Function | Code |", output)
+        self.assertIn("| 类别 | 名称 | 功能 | 代码 |", output)
         self.assertIn("create_program", output)
         self.assertIn("POU-001", output)
+        self.assertIn("pous / 程序组织单元", output)
 
     def test_list_tools_json_view_prints_machine_readable_catalog(self) -> None:
         stream = StringIO()

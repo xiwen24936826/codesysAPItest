@@ -117,19 +117,31 @@ def _render_tool_catalog_summary(catalog: list[dict[str, object]]) -> str:
         ),
     )
     lines = [
-        "| Category | Name | Function | Code |",
+        "| 类别 | 名称 | 功能 | 代码 |",
         "| --- | --- | --- | --- |",
     ]
     for item in ordered:
         lines.append(
             "| {category} | {name} | {description} | {code} |".format(
-                category=item.get("category", ""),
+                category=_display_category(str(item.get("category", ""))),
                 name=item.get("name", ""),
                 description=item.get("description", ""),
                 code=item.get("code", ""),
             )
         )
     return "\n".join(lines)
+
+
+def _display_category(category: str) -> str:
+    """Return a Chinese-friendly display label for one business category."""
+    category_labels = {
+        "projects": "projects / 项目",
+        "pous": "pous / 程序组织单元",
+        "devices": "devices / 设备与扫描",
+        "online": "online / 在线操作",
+        "ethercat": "ethercat / EtherCAT 预留",
+    }
+    return category_labels.get(category, category)
 
 
 if __name__ == "__main__":

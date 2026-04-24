@@ -1,8 +1,9 @@
-"""Generate tool-catalog and workflow docs from the canonical tool catalog."""
+"""Generate UTF-8 tool-catalog and workflow docs from the canonical tool catalog."""
 
 from __future__ import annotations
 
 from collections import defaultdict
+import json
 from pathlib import Path
 import sys
 
@@ -13,7 +14,7 @@ SRC_PATH = REPO_ROOT / "src"
 if str(SRC_PATH) not in sys.path:
     sys.path.insert(0, str(SRC_PATH))
 
-from codesys_mcp_server.tools.catalog import get_tool_catalog
+from codesys_mcp_server.tools.catalog import get_tool_catalog, tool_code_for  # noqa: E402
 
 
 WORKFLOW_TITLES = {
@@ -21,6 +22,20 @@ WORKFLOW_TITLES = {
     "new_project_flow": "新建工程流",
     "network_scan_flow": "网络扫描流",
     "online_operations_flow": "PLC 在线操作流",
+}
+
+DOMAIN_LABELS = {
+    "projects": "projects / 项目",
+    "pous": "pous / 程序组织单元",
+    "devices": "devices / 设备与扫描",
+    "online": "online / 在线操作",
+    "ethercat": "ethercat / EtherCAT 预留",
+}
+
+RISK_LABELS = {
+    "safe": "safe / 低风险",
+    "caution": "caution / 需谨慎",
+    "dangerous": "dangerous / 高风险",
 }
 
 
@@ -36,9 +51,9 @@ def _write_tool_catalog_doc(catalog) -> None:
     lines = [
         "# Tool Catalog",
         "",
-        "本文件由 `scripts/sync_tool_docs.py` 从 `src/codesys_mcp_server/tools/catalog.py` 生成。",
+        "本文档由 `scripts/sync_tool_docs.py` 从 `src/codesys_mcp_server/tools/catalog.py` 自动生成。",
         "",
-        "这是当前 MCP 工具的唯一权威索引文档视图。",
+        "这是当前 MCP 工具的单一权威索引视图，用于查看工具分类、功能说明、风险等级和输入契约。",
         "",
     ]
 
@@ -47,10 +62,15 @@ def _write_tool_catalog_doc(catalog) -> None:
             [
                 "## `%s`" % entry.name,
                 "",
-                "- 描述：%s" % entry.description,
-                "- 域：`%s`" % entry.domain,
-                "- 风险等级：`%s`" % entry.risk_level,
-                "- 工作流：%s" % ", ".join("`%s`" % workflow for workflow in entry.workflow_ids),
+                "- 代码：`%s`" % tool_code_for(entry.name),
+                "- 类别：`%s`" % DOMAIN_LABELS.get(entry.domain, entry.domain),
+                "- 功能：%s" % entry.description,
+                "- 风险等级：`%s`" % RISK_LABELS.get(entry.risk_level, entry.risk_level),
+                "- 工作流：%s"
+                % ", ".join(
+                    "`%s`" % WORKFLOW_TITLES.get(workflow, workflow)
+                    for workflow in entry.workflow_ids
+                ),
             ]
         )
         if entry.preferred_predecessors:
@@ -66,7 +86,7 @@ def _write_tool_catalog_doc(catalog) -> None:
                 "输入字段：",
                 "",
                 "```json",
-                _pretty_schema(entry.input_schema),
+                json.dumps(entry.input_schema, ensure_ascii=False, indent=2),
                 "```",
                 "",
             ]
@@ -85,9 +105,9 @@ def _write_client_workflows_doc(catalog) -> None:
     lines = [
         "# Client Workflows",
         "",
-        "本文件由 `scripts/sync_tool_docs.py` 从 `src/codesys_mcp_server/tools/catalog.py` 生成。",
+        "本文档由 `scripts/sync_tool_docs.py` 从 `src/codesys_mcp_server/tools/catalog.py` 自动生成。",
         "",
-        "用于指导客户端如何在不同场景下优先选择 MCP 工具。",
+        "用于指导客户端在不同场景下优先选择 MCP 工具，并按风险和前置条件理解工作流。",
         "",
     ]
 
@@ -114,7 +134,11 @@ def _write_client_workflows_doc(catalog) -> None:
         for entry in ordered:
             lines.append(
                 "- `%s`：%s（风险：`%s`）"
-                % (entry.name, entry.description, entry.risk_level)
+                % (
+                    entry.name,
+                    entry.description,
+                    RISK_LABELS.get(entry.risk_level, entry.risk_level),
+                )
             )
             if entry.preferred_predecessors:
                 lines.append(
@@ -126,12 +150,6 @@ def _write_client_workflows_doc(catalog) -> None:
         lines.append("")
 
     output_path.write_text("\n".join(lines).rstrip() + "\n", encoding="utf-8")
-
-
-def _pretty_schema(schema: dict) -> str:
-    import json
-
-    return json.dumps(schema, ensure_ascii=False, indent=2)
 
 
 if __name__ == "__main__":

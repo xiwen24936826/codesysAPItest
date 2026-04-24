@@ -1,15 +1,16 @@
 # Tool Catalog
 
-本文件由 `scripts/sync_tool_docs.py` 从 `src/codesys_mcp_server/tools/catalog.py` 生成。
+本文档由 `scripts/sync_tool_docs.py` 从 `src/codesys_mcp_server/tools/catalog.py` 自动生成。
 
-这是当前 MCP 工具的唯一权威索引文档视图。
+这是当前 MCP 工具的单一权威索引视图，用于查看工具分类、功能说明、风险等级和输入契约。
 
 ## `create_project`
 
-- 描述：Create a new CODESYS project.
-- 域：`projects`
-- 风险等级：`dangerous`
-- 工作流：`new_project_flow`
+- 代码：`PRJ-001`
+- 类别：`projects / 项目`
+- 功能：Create a new CODESYS project.
+- 风险等级：`dangerous / 高风险`
+- 工作流：`新建工程流`
 - 备注：Only for explicit new-project creation requests. Must not be used as a fallback during existing-project editing.
 
 输入字段：
@@ -45,10 +46,11 @@
 
 ## `open_project`
 
-- 描述：Open an existing CODESYS project.
-- 域：`projects`
-- 风险等级：`safe`
-- 工作流：`existing_project_edit_flow`, `new_project_flow`, `online_operations_flow`
+- 代码：`PRJ-002`
+- 类别：`projects / 项目`
+- 功能：Open an existing CODESYS project.
+- 风险等级：`safe / 低风险`
+- 工作流：`现有工程编辑流`, `新建工程流`, `PLC 在线操作流`
 
 输入字段：
 
@@ -69,10 +71,11 @@
 
 ## `list_project_objects`
 
-- 描述：List child objects below a logical container in the project tree.
-- 域：`projects`
-- 风险等级：`safe`
-- 工作流：`existing_project_edit_flow`, `new_project_flow`
+- 代码：`PRJ-003`
+- 类别：`projects / 项目`
+- 功能：List child objects below a logical container in the project tree.
+- 风险等级：`safe / 低风险`
+- 工作流：`现有工程编辑流`, `新建工程流`
 - 推荐前置工具：`open_project`
 - 备注：Prefer can_browse over is_folder when recursing the returned tree.
 
@@ -98,10 +101,11 @@
 
 ## `find_project_objects`
 
-- 描述：Find matching objects by name below a logical container in the project tree.
-- 域：`projects`
-- 风险等级：`safe`
-- 工作流：`existing_project_edit_flow`, `new_project_flow`
+- 代码：`PRJ-004`
+- 类别：`projects / 项目`
+- 功能：Find matching objects by name below a logical container in the project tree.
+- 风险等级：`safe / 低风险`
+- 工作流：`现有工程编辑流`, `新建工程流`
 - 推荐前置工具：`open_project`
 
 输入字段：
@@ -133,10 +137,11 @@
 
 ## `scan_network_devices`
 
-- 描述：Scan online targets through a configured CODESYS gateway.
-- 域：`online`
-- 风险等级：`safe`
-- 工作流：`network_scan_flow`
+- 代码：`DEV-001`
+- 类别：`online / 在线操作`
+- 功能：Scan online targets through a configured CODESYS gateway.
+- 风险等级：`safe / 低风险`
+- 工作流：`网络扫描流`
 
 输入字段：
 
@@ -158,10 +163,11 @@
 
 ## `save_project`
 
-- 描述：Save or save-as an existing CODESYS project.
-- 域：`projects`
-- 风险等级：`caution`
-- 工作流：`existing_project_edit_flow`, `new_project_flow`
+- 代码：`PRJ-005`
+- 类别：`projects / 项目`
+- 功能：Save or save-as an existing CODESYS project.
+- 风险等级：`caution / 需谨慎`
+- 工作流：`现有工程编辑流`, `新建工程流`
 
 输入字段：
 
@@ -193,10 +199,11 @@
 
 ## `add_controller_device`
 
-- 描述：Add a top-level controller device to a project.
-- 域：`projects`
-- 风险等级：`dangerous`
-- 工作流：`new_project_flow`
+- 代码：`PRJ-006`
+- 类别：`projects / 项目`
+- 功能：Add a top-level controller device to a project.
+- 风险等级：`dangerous / 高风险`
+- 工作流：`新建工程流`
 - 推荐前置工具：`create_project`, `open_project`
 - 备注：Not part of the preferred existing-project POU editing flow.
 
@@ -241,10 +248,11 @@
 
 ## `create_program`
 
-- 描述：Create a PRG in the selected container.
-- 域：`pous`
-- 风险等级：`caution`
-- 工作流：`existing_project_edit_flow`, `new_project_flow`
+- 代码：`POU-001`
+- 类别：`pous / 程序组织单元`
+- 功能：Create a PRG in the selected container.
+- 风险等级：`caution / 需谨慎`
+- 工作流：`现有工程编辑流`, `新建工程流`
 - 推荐前置工具：`open_project`, `list_project_objects`
 
 输入字段：
@@ -277,10 +285,11 @@
 
 ## `create_function_block`
 
-- 描述：Create a function block in the selected container.
-- 域：`pous`
-- 风险等级：`caution`
-- 工作流：`existing_project_edit_flow`, `new_project_flow`
+- 代码：`POU-002`
+- 类别：`pous / 程序组织单元`
+- 功能：Create a function block in the selected container.
+- 风险等级：`caution / 需谨慎`
+- 工作流：`现有工程编辑流`, `新建工程流`
 - 推荐前置工具：`open_project`, `list_project_objects`
 
 输入字段：
@@ -322,10 +331,11 @@
 
 ## `create_function`
 
-- 描述：Create a function in the selected container.
-- 域：`pous`
-- 风险等级：`caution`
-- 工作流：`existing_project_edit_flow`, `new_project_flow`
+- 代码：`POU-003`
+- 类别：`pous / 程序组织单元`
+- 功能：Create a function in the selected container.
+- 风险等级：`caution / 需谨慎`
+- 工作流：`现有工程编辑流`, `新建工程流`
 - 推荐前置工具：`open_project`, `list_project_objects`
 
 输入字段：
@@ -362,10 +372,11 @@
 
 ## `read_textual_declaration`
 
-- 描述：Read the textual declaration part of an object.
-- 域：`pous`
-- 风险等级：`safe`
-- 工作流：`existing_project_edit_flow`
+- 代码：`POU-004`
+- 类别：`pous / 程序组织单元`
+- 功能：Read the textual declaration part of an object.
+- 风险等级：`safe / 低风险`
+- 工作流：`现有工程编辑流`
 - 推荐前置工具：`open_project`
 
 输入字段：
@@ -395,10 +406,11 @@
 
 ## `read_textual_implementation`
 
-- 描述：Read the textual implementation part of an object.
-- 域：`pous`
-- 风险等级：`safe`
-- 工作流：`existing_project_edit_flow`
+- 代码：`POU-005`
+- 类别：`pous / 程序组织单元`
+- 功能：Read the textual implementation part of an object.
+- 风险等级：`safe / 低风险`
+- 工作流：`现有工程编辑流`
 - 推荐前置工具：`open_project`
 
 输入字段：
@@ -428,10 +440,11 @@
 
 ## `replace_text_document`
 
-- 描述：Replace a declaration or implementation document.
-- 域：`pous`
-- 风险等级：`caution`
-- 工作流：`existing_project_edit_flow`
+- 代码：`POU-006`
+- 类别：`pous / 程序组织单元`
+- 功能：Replace a declaration or implementation document.
+- 风险等级：`caution / 需谨慎`
+- 工作流：`现有工程编辑流`
 - 推荐前置工具：`open_project`
 
 输入字段：
@@ -473,10 +486,11 @@
 
 ## `append_text_document`
 
-- 描述：Append text to the end of a declaration or implementation document.
-- 域：`pous`
-- 风险等级：`caution`
-- 工作流：`existing_project_edit_flow`
+- 代码：`POU-007`
+- 类别：`pous / 程序组织单元`
+- 功能：Append text to the end of a declaration or implementation document.
+- 风险等级：`caution / 需谨慎`
+- 工作流：`现有工程编辑流`
 - 推荐前置工具：`open_project`
 
 输入字段：
@@ -518,10 +532,11 @@
 
 ## `insert_text_document`
 
-- 描述：Insert text into a declaration or implementation document at a fixed offset.
-- 域：`pous`
-- 风险等级：`caution`
-- 工作流：`existing_project_edit_flow`
+- 代码：`POU-008`
+- 类别：`pous / 程序组织单元`
+- 功能：Insert text into a declaration or implementation document at a fixed offset.
+- 风险等级：`caution / 需谨慎`
+- 工作流：`现有工程编辑流`
 - 推荐前置工具：`open_project`
 
 输入字段：

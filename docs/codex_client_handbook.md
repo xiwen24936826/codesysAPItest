@@ -1,11 +1,10 @@
 # Codex Client Handbook
 
-本手册现在是仓库的主客户端使用规则文档。
+本手册是当前仓库的主客户端使用规则文档。
 
 - 阶段范围和稳定边界以 [current_phase_plan.md](D:\工作资料\codesysAPItest\docs\current_phase_plan.md) 为准
-- 本文档只保留客户端应如何选工具、如何递归扫描、以及如何避免误调用
-- Claude Code 的连接细节放在 [claude_code_connection.md](D:\工作资料\codesysAPItest\docs\claude_code_connection.md)
-- 工具的单一权威索引见 [tool_catalog.md](D:\工作资料\codesysAPItest\docs\api_specs\tool_catalog.md)
+- Claude Code 的连接细节见 [claude_code_connection.md](D:\工作资料\codesysAPItest\docs\claude_code_connection.md)
+- 工具单一权威索引见 [tool_catalog.md](D:\工作资料\codesysAPItest\docs\api_specs\tool_catalog.md)
 - 工作流分组视图见 [client_workflows.md](D:\工作资料\codesysAPItest\docs\client_workflows.md)
 
 ## 1. 当前可靠能力
@@ -27,21 +26,21 @@
 
 ## 2. 当前前置条件
 
-- 项目文件路径必须是绝对路径。
-- 项目路径优先使用纯英文或 ASCII 路径。
+- `project_path` 必须是绝对路径。
+- 真实项目路径当前仍优先使用纯英文或 ASCII 路径，例如 `D:\test\test_pou_create.project`。
 - `container_path` 是项目内逻辑路径，例如 `Application`。
-- 在第一阶段，允许用户手工在 SP20 中准备真实项目。
-- 当真实项目由用户手工准备时，Codex 不应强行先调用 `create_project`。
+- 第一阶段允许用户先手工准备 SP20 真实项目。
+- 当目标是“编辑已有工程中的 POU”时，客户端不应把 `create_project` 当作兜底方案。
 
 ## 3. 推荐任务拆解顺序
 
 当用户说“在某个项目中创建或修改 POU”时，推荐顺序是：
 
-1. 确认或提取 `project_path`
-2. 使用 `open_project`
-3. 先使用 `list_project_objects` 或 `find_project_objects`
-4. 只根据返回结果选择真实容器
-5. 根据目标类型选择：
+1. 确认 `project_path`
+2. 调用 `open_project`
+3. 先调用 `list_project_objects` 或 `find_project_objects`
+4. 根据返回结果定位真实 `Application` 容器
+5. 选择创建工具：
    - `create_program`
    - `create_function_block`
    - `create_function`
@@ -49,40 +48,60 @@
    - `read_textual_declaration`
    - `read_textual_implementation`
 7. 根据修改意图选择：
-   - 整体替换用 `replace_text_document`
-   - 末尾追加用 `append_text_document`
-   - 指定位置插入用 `insert_text_document`
+   - `replace_text_document`
+   - `append_text_document`
+   - `insert_text_document`
+8. 最后 `save_project`
 
 补充约束：
 
-- 客户端递归扫描时，优先看 `can_browse`。
-- `is_folder` 只保留兼容意义，不能再作为主要递归条件。
-- `child_count` 只是提示信息，不是是否继续扫描的判断依据。
-- `is_device` 与 `device_identification` 是设备树增强信息，可辅助识别控制器、总线和模块。
-- 如果调用方传入 `/` 或 `Application`，服务端仍会尝试自动解析到真实项目里的嵌套 `Application` 容器，但这只是 fallback，不是主流程。
-- 在真实 SP20 自动化链路中，源码文本暂时应保持 ASCII-only，避免中文注释写入后乱码。
-- 写实现区之前，应先确保声明区包含实现逻辑会使用到的变量。
-- 当任务目标是“在现有工程中编辑或生成 POU”时，客户端不应自行切换到 `create_project` 或 `add_controller_device`。
+- 客户端递归扫描时优先看 `can_browse`。
+- `is_folder` 只保留兼容意义，不能再作为主递归条件。
+- `child_count` 只是辅助信息，不是是否继续扫描的判断依据。
+- `is_device` 和 `device_identification` 可辅助识别控制器、总线和设备节点。
+- 如果调用方传入 `/` 或 `Application`，服务端仍会尝试自动解析到真实项目里的嵌套 `Application`，但这是 fallback，不是主流程。
 
 ## 4. 文本工具语义
 
-- `replace_text_document`: 用新全文覆盖原文
-- `append_text_document`: 只在末尾追加
-- `insert_text_document`: 在指定字符偏移位置插入
-- 当前真实后端建议源码和注释使用 ASCII-only
+- `replace_text_document`：用新全文覆盖原文
+- `append_text_document`：只在末尾追加
+- `insert_text_document`：在指定字符偏移位置插入
 
 不要把 `append_text_document` 当成“任意位置插入”工具使用。
 
-## 5. 当前不可靠或暂缓能力
+## 5. UTF-8 与路径规则
+
+当前结论已经更新为：
+
+- 真实项目**路径**仍建议使用 ASCII-only 路径
+- 真实项目中的**源码文本**现在允许使用 UTF-8 注释和字符串
+
+已完成的真实实验结论：
+
+- 在 ASCII 项目路径下
+- 通过真实 SP20 后端创建临时 FB
+- 写入中文声明区注释和中文实现区注释
+- 再读回 declaration / implementation
+- 回读结果与写入内容一致，没有出现 `?` 或乱码
+
+因此：
+
+- “项目路径 ASCII-only” 继续保留
+- “源码和注释必须 ASCII-only” 已不再作为当前规则
+
+## 6. 当前不可靠或暂缓能力
 
 - `scan_ethercat_devices` 暂缓
-- `create_project/open_project/save_project/add_controller_device` 的真实自动化链路仍可能受到 SP20 环境问题影响
-- 若用户已手工准备项目，优先走“现有项目 + POU 操作”的路径
-- `create_project` 现在属于高风险工具：
-  - 仅用于明确的新工程创建场景
-  - 不能作为“找不到 Application 时的兜底方案”
+- `create_project / add_controller_device` 属于高风险工具
+- 自动建工程链路仍可能受 SP20 环境波动影响
 
-## 6. 自然语言到工具的大致映射
+对“在已有工程里生成 POU”这类任务：
+
+- 优先走现有工程编辑流
+- 不要误用 `create_project`
+- 不要把 `add_controller_device` 当作修复容器定位失败的手段
+
+## 7. 自然语言到工具的大致映射
 
 - “帮我创建一个 PRG”
   - `open_project`
@@ -105,3 +124,18 @@
 - “在实现区开头插入一行注释”
   - `open_project`
   - `insert_text_document`
+
+## 8. 终端显示建议
+
+如果你在 PowerShell 中查看 CLI 表格或 Markdown 文档，建议先执行：
+
+```powershell
+chcp 65001
+$OutputEncoding = [Console]::OutputEncoding = [System.Text.UTF8Encoding]::new()
+```
+
+查看中文 Markdown 时建议显式指定：
+
+```powershell
+Get-Content -Raw -Encoding UTF8 "D:\工作资料\codesysAPItest\docs\codex_client_handbook.md"
+```

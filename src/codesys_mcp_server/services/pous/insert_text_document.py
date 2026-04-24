@@ -13,7 +13,6 @@ from ._common import (
     raise_validation_error,
     read_document_text,
     require_absolute_path,
-    require_ascii_text,
     require_document_kind,
     require_non_empty_string,
     require_non_negative_int,
@@ -206,13 +205,9 @@ def _validate_request(request: dict[str, Any]) -> InsertTextDocumentRequest:
             request.get("document_kind"),
             InsertTextDocumentValidationError,
         ),
-        text_to_insert=require_ascii_text(
+        text_to_insert=require_non_empty_string(
             "text_to_insert",
-            require_non_empty_string(
-                "text_to_insert",
-                request.get("text_to_insert"),
-                InsertTextDocumentValidationError,
-            ),
+            request.get("text_to_insert"),
             InsertTextDocumentValidationError,
         ),
         insertion_offset=require_non_negative_int(

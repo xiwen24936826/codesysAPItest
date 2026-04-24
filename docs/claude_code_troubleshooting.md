@@ -1,26 +1,14 @@
 # Claude Code 常见失败排查表
 
-更新时间：2026-04-23
+更新时间：2026-04-24
 
-本文档用于快速排查 Claude Code 作为客户端连接本项目时的常见失败情况。
+## 1. MCP Server 显示 `failed` 或无法连接
 
-## 1. MCP Server 显示 failed 或无法连接
+先检查：
 
-典型现象：
-
-- `Manage MCP servers` 里看到：
-  - `codesys-sp20 · × failed`
-- `claude mcp list` 显示：
-  - `Failed to connect`
-
-优先检查：
-
-1. 仓库根目录是否存在：
-   - [.mcp.json](D:\工作资料\codesysAPItest\.mcp.json)
-2. 启动脚本是否存在：
-   - [start_mcp_server.ps1](D:\工作资料\codesysAPItest\scripts\start_mcp_server.ps1)
-3. Claude Code 是否在项目目录中打开：
-   - `D:\工作资料\codesysAPItest`
+1. 仓库根目录是否存在 [.mcp.json](D:\工作资料\codesysAPItest\.mcp.json)
+2. 启动脚本是否存在 [start_mcp_server.ps1](D:\工作资料\codesysAPItest\scripts\start_mcp_server.ps1)
+3. Claude Code 是否在项目目录 `D:\工作资料\codesysAPItest` 中打开
 
 建议命令：
 
@@ -30,211 +18,99 @@ claude mcp list
 claude mcp get codesys-sp20
 ```
 
-当前已知正常状态：
-
-- `codesys-sp20: ... ✓ Connected`
-
 ## 2. MCP 工具未授权
 
 典型现象：
 
 - `mcp__codesys-sp20__open_project` 未授权
-- `mcp__codesys-sp20__append_text_document` 未授权
-- Claude 输出：
-  - `Claude requested permissions to use ...`
-
-原因：
-
-- 这是 Claude Code 自身的工具权限策略
-- 不是 MCP server 坏了
-- 也不是缺少 `skills.md`
+- Claude 弹出工具权限请求
 
 解决办法：
 
-1. 在项目中配置：
-   - [settings.json](D:\工作资料\codesysAPItest\.claude\settings.json)
+1. 配置 `.claude/settings.json`
 2. 预先允许：
    - `mcp__codesys-sp20`
+3. 把真实项目目录加入：
+   - `D:\test`
 
-当前推荐配置：
-
-```json
-{
-  "permissions": {
-    "allow": [
-      "mcp__codesys-sp20"
-    ],
-    "defaultMode": "default"
-  },
-  "additionalDirectories": [
-    "D:\\test"
-  ]
-}
-```
-
-说明：
-
-- `mcp__codesys-sp20` 会放行该 MCP server 下的整组工具
-- `additionalDirectories` 允许 Claude 的内置工具访问真实项目目录
-
-## 3. 中文路径项目打开失败
+## 3. 中文项目路径导致 `open_project` 失败
 
 典型现象：
 
-- 在自然语言里指定：
-  - `D:\工作资料\test\test_pou_create.project`
-- `open_project` 返回：
-  - `Unexpected error while opening project.`
-- 服务端真实异常里出现：
-  - `D:/????/test/test_pou_create.project`
+- 项目明明存在
+- 但真实后端返回路径被破坏成 `????`
 
-原因：
+当前结论：
 
-- 真实 SP20 / CODESYS 后端当前对非 ASCII 路径不稳定
-- 中文目录会在自动化链路里被破坏成 `????`
-
-已验证结论：
-
-- 中文路径项目会失败
-- 同一个项目复制到英文路径后，`open_project` 成功
+- 真实 SP20 自动化链路对**中文工程路径**仍然不稳定
+- 所以项目路径继续建议使用 ASCII-only 路径
 
 推荐做法：
 
-1. 把 `.project` 放到纯英文路径
-2. 优先使用：
-   - `D:\test\test_pou_create.project`
-
-不推荐当前阶段继续使用：
-
-- `D:\工作资料\...`
+- 使用 `D:\test\test_pou_create.project`
+- 不要把主工程放在中文目录下做自动化调用
 
 ## 4. `container_path` 错误
 
-典型现象：
+推荐顺序：
 
-- `Field 'container_path' is required.`
-- Claude 传了空字符串：
-  - `""`
-- 或者传了项目里并不存在的逻辑路径
+1. `open_project`
+2. `list_project_objects` 或 `find_project_objects`
+3. 根据真实返回结果定位 `Application`
+4. 再创建 POU
 
-原因：
+补充规则：
 
-- 当前服务层要求 `container_path` 必填
-- 某些真实项目根节点没有 `Application`
-- 你的真实项目已经验证过顶层对象是：
-  - `MyController`
-  - `Project Information`
-  - `Project Settings`
-  - `__VisualizationStyle`
+- 递归扫描优先看 `can_browse`
+- `is_folder` 只保留兼容意义
 
-当前已验证可用规则：
+## 5. 中文注释是否会乱码
 
-- 对这个项目，创建 POU 时调用方即使传：
-  - `/`
-  - `Application`
-- 服务端现在也会优先自动解析到真实项目里的嵌套 `Application`
+最新结论已经更新：
 
-推荐做法：
+- 在 **ASCII 项目路径** 下
+- 真实 SP20 后端对 **UTF-8 中文注释** 已完成一次受控实验
+- 声明区和实现区中文注释写入后再读回，结果一致，没有出现 `?`
 
-1. 如果知道项目里有 `Application`
-   - 用 `Application`
-2. 如果不确定项目顶层结构
-   - 用 `/`
-3. 让服务端自动解析真实的 `Application` 容器
+所以当前规则是：
 
-当前第一阶段对真实项目最稳的默认值是：
+- 工程路径：继续 ASCII-only
+- 源码文本：允许 UTF-8 中文注释
 
-```text
-container_path = /
+## 6. 变量声明遗漏导致预编译报错
+
+当前工具链已经做的保护：
+
+- 写实现区前会校验声明区
+- 如果实现区引用了未声明标识符，会直接拒绝写入
+
+推荐客户端顺序：
+
+1. 先生成/补齐声明区
+2. 再写实现区
+3. 必要时先 `read_textual_declaration`
+
+## 7. 终端中文显示乱码
+
+这通常不是 Markdown 文件坏了，而是 PowerShell 显示编码问题。
+
+建议先执行：
+
+```powershell
+chcp 65001
+$OutputEncoding = [Console]::OutputEncoding = [System.Text.UTF8Encoding]::new()
 ```
 
-## 5. Claude 理解了自然语言，但中途停住
+查看文档时显式指定：
 
-典型现象：
-
-- 已经调用了 `open_project`
-- 已经创建了 `create_program`
-- 然后在 `append_text_document` 或别的工具处停住
-
-常见原因：
-
-1. 又遇到新的 MCP 工具权限请求
-2. 路径是中文路径
-3. 生成的 `container_path` 不正确
-4. 实现区用了未声明变量
-5. 实现区写入了中文注释导致乱码
-
-排查顺序：
-
-1. 先看是否弹了新的工具授权
-2. 再看项目路径是否为纯英文
-3. 再看 Claude 调用时的 `container_path` 是否是 `/` 或 `Application`
-4. 再看声明区是否真的声明了实现区里使用到的变量
-5. 再看实现区是否包含中文注释或非 ASCII 文本
-
-## 6. Claude 想自己猜项目结构，结果越走越偏
-
-典型现象：
-
-- 先试图 `Glob` 项目文件
-- 再试图 `Bash` 到项目目录
-- 然后因为目录权限受限而偏离主线
-
-原因：
-
-- Claude 会尝试用内置工具先探路
-- 如果目标目录不在 `additionalDirectories` 里，就会被限制
-
-解决办法：
-
-1. 在自然语言里直接给出绝对路径
-2. 在 `.claude/settings.json` 里加入：
-   - `D:\test`
-3. 在提示里明确要求：
-   - 直接使用 MCP tools，不要先用 Bash/Glob 试探
-
-推荐提示词：
-
-```text
-在项目 D:\test\test_pou_create.project 中创建一个 ST 程序，名称为 DemoMain。请直接使用可用的 MCP tools 完成，不要先用 Bash 或 Glob 探测项目。
+```powershell
+Get-Content -Raw -Encoding UTF8 "D:\工作资料\codesysAPItest\docs\codex_client_handbook.md"
 ```
 
-更稳的写法是：
+查看工具目录：
 
-```text
-在项目 D:\test\test_pou_create.project 中创建一个 ST 程序，名称为 DemoMain。请直接使用可用的 MCP tools 完成，不要先用 Bash 或 Glob 探测项目；如果需要 container_path，请使用 /；源码和注释使用 ASCII-only；如果实现区使用到变量，先补全声明区变量。
+```powershell
+cd "D:\工作资料\codesysAPItest"
+$env:PYTHONPATH="$PWD\src"
+python -m codesys_mcp_server.server.cli --backend real_ide list-tools
 ```
-
-## 7. 当前最稳的最小联调方式
-
-推荐条件：
-
-1. 项目路径为英文路径：
-   - `D:\test\test_pou_create.project`
-2. Claude Code 已连接：
-   - `codesys-sp20`
-3. `.claude/settings.json` 已允许：
-   - `mcp__codesys-sp20`
-4. 真实项目目录已加入：
-   - `D:\test`
-
-推荐首条自然语言：
-
-```text
-在项目 D:\test\test_pou_create.project 中创建一个 ST 程序，名称为 DemoMain，并在实现区写入一行注释和一行赋值。请直接使用可用的 MCP tools 完成，不要先用 Bash 或 Glob 探测项目。
-```
-
-## 8. 一句话总结
-
-当前 Claude Code 联调最常见的 3 个根因是：
-
-1. MCP 工具未授权
-2. 项目路径含中文
-3. `container_path` 不正确
-
-当前另外两类高频问题也要注意：
-
-4. 中文注释会在真实后端写入后乱码
-5. 实现区逻辑如果引用了未声明变量，会导致预编译报错
-
-只要先解决这 3 个点，第一阶段的 POU 自然语言链路就是可用的。

@@ -341,7 +341,7 @@ class TextDocumentServiceTests(unittest.TestCase):
         self.assertEqual(response["error"]["code"], "VALIDATION_ERROR")
         self.assertEqual(response["error"]["details"]["field"], "insertion_offset")
 
-    def test_replace_text_document_rejects_non_ascii_text(self) -> None:
+    def test_replace_text_document_accepts_utf8_text(self) -> None:
         writer = FakeTextDocumentWriter()
 
         response = replace_text_document(
@@ -350,17 +350,17 @@ class TextDocumentServiceTests(unittest.TestCase):
                 "container_path": "Application",
                 "object_name": "MainProgram",
                 "document_kind": "implementation",
-                "new_text": "// init\nx := 1;\u4e2d",
+                "new_text": "Counter := Counter + 1; // 中文注释",
             },
             text_document_replacer=writer,
             request_id="req-text-006",
         )
 
-        self.assertFalse(response["ok"])
-        self.assertEqual(response["error"]["code"], "NON_ASCII_TEXT_UNSUPPORTED")
-        self.assertEqual(writer.calls, [])
+        self.assertTrue(response["ok"])
+        replace_call = next(call for call in writer.calls if call["kind"] == "replace")
+        self.assertEqual(replace_call["new_text"], "Counter := Counter + 1; // 中文注释")
 
-    def test_append_text_document_rejects_non_ascii_text(self) -> None:
+    def test_append_text_document_accepts_utf8_text(self) -> None:
         writer = FakeTextDocumentWriter()
 
         response = append_text_document(
@@ -375,9 +375,9 @@ class TextDocumentServiceTests(unittest.TestCase):
             request_id="req-text-007",
         )
 
-        self.assertFalse(response["ok"])
-        self.assertEqual(response["error"]["code"], "NON_ASCII_TEXT_UNSUPPORTED")
-        self.assertEqual(writer.calls, [])
+        self.assertTrue(response["ok"])
+        append_call = next(call for call in writer.calls if call["kind"] == "append")
+        self.assertEqual(append_call["text_to_append"], "// init\u4e2d")
 
     def test_replace_text_document_verifies_roundtrip_after_write(self) -> None:
         writer = CorruptingTextDocumentWriter()

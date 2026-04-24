@@ -11,7 +11,6 @@ from ._common import (
     execute_text_write_flow,
     error_response,
     require_absolute_path,
-    require_ascii_text,
     require_document_kind,
     require_non_empty_string,
     success_response,
@@ -178,13 +177,9 @@ def _validate_request(request: dict[str, Any]) -> AppendTextDocumentRequest:
             request.get("document_kind"),
             AppendTextDocumentValidationError,
         ),
-        text_to_append=require_ascii_text(
+        text_to_append=require_non_empty_string(
             "text_to_append",
-            require_non_empty_string(
-                "text_to_append",
-                request.get("text_to_append"),
-                AppendTextDocumentValidationError,
-            ),
+            request.get("text_to_append"),
             AppendTextDocumentValidationError,
         ),
     )
