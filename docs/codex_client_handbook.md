@@ -1,51 +1,19 @@
 # Codex Client Handbook
 
-本手册用于指导 Codex 作为 MCP 客户端连接本项目时，如何理解自然语言、如何拆解任务，以及哪些能力当前可靠。
+本手册现在是仓库的主客户端使用规则文档。
 
-## 2026-04-23 Note
-
-For new POU creation work, prefer the explicit scan-first workflow:
-
-1. `open_project`
-2. `list_project_objects`
-3. choose the real nested `Application` container from the returned tree
-4. `create_program` / `create_function_block` / `create_function`
-5. declaration and implementation read or write tools
-
-The server still keeps automatic `Application` fallback logic for `/` and
-`Application`, but that fallback is now a safety net rather than the primary path.
-
-When scanning the project tree, prefer `can_browse` over `is_folder`.
-
-- `can_browse: true` means the client should treat the node as a browsable
-  container and may call `list_project_objects` on its `path`.
-- `is_folder` is still returned for compatibility, but it is not reliable enough
-  on its own for real SP20 device-tree traversal.
-- `child_count` is advisory. It helps prioritize likely containers, but clients
-  should still rely on `can_browse` for recursion decisions.
-- `is_device: true` means the node should be treated as a device-tree object,
-  not just a logical folder-like container.
-- `device_identification` carries device metadata when the real scripting API
-  can resolve it. Clients should treat it as optional enrichment rather than a
-  guaranteed field.
-
-Current write-path guardrails:
-
-1. `replace_text_document`, `append_text_document`, and `insert_text_document`
-   now read the resulting document back after write and fail if the round-trip
-   text does not match the expected content.
-2. implementation writes can now fail with `POU_SOURCE_VALIDATION_FAILED` if the
-   generated code references identifiers that are missing from the declaration.
-3. declaration writes can now fail with `POU_SOURCE_VALIDATION_FAILED` if they
-   would break the current implementation.
-4. non-ASCII source text is still rejected on the real IDE path until UTF-8
-   round-trip validation is proven stable there.
+- 阶段范围和稳定边界以 [current_phase_plan.md](D:\工作资料\codesysAPItest\docs\current_phase_plan.md) 为准
+- 本文档只保留客户端应如何选工具、如何递归扫描、以及如何避免误调用
+- Claude Code 的连接细节放在 [claude_code_connection.md](D:\工作资料\codesysAPItest\docs\claude_code_connection.md)
 
 ## 1. 当前可靠能力
 
 优先使用以下工具：
 
 - `open_project`
+- `list_project_objects`
+- `find_project_objects`
+- `scan_network_devices`
 - `create_program`
 - `create_function_block`
 - `create_function`
@@ -69,23 +37,30 @@ Current write-path guardrails:
 
 1. 确认或提取 `project_path`
 2. 使用 `open_project`
-3. 根据目标类型选择：
+3. 先使用 `list_project_objects` 或 `find_project_objects`
+4. 只根据返回结果选择真实容器
+5. 根据目标类型选择：
    - `create_program`
    - `create_function_block`
    - `create_function`
-4. 读取已有文本：
+6. 读取已有文本：
    - `read_textual_declaration`
    - `read_textual_implementation`
-5. 根据修改意图选择：
+7. 根据修改意图选择：
    - 整体替换用 `replace_text_document`
    - 末尾追加用 `append_text_document`
    - 指定位置插入用 `insert_text_document`
 
 补充约束：
 
-- 如果调用方传入 `/` 或 `Application`，服务端现在会优先自动解析到真实项目里的嵌套 `Application` 容器。
+- 客户端递归扫描时，优先看 `can_browse`。
+- `is_folder` 只保留兼容意义，不能再作为主要递归条件。
+- `child_count` 只是提示信息，不是是否继续扫描的判断依据。
+- `is_device` 与 `device_identification` 是设备树增强信息，可辅助识别控制器、总线和模块。
+- 如果调用方传入 `/` 或 `Application`，服务端仍会尝试自动解析到真实项目里的嵌套 `Application` 容器，但这只是 fallback，不是主流程。
 - 在真实 SP20 自动化链路中，源码文本暂时应保持 ASCII-only，避免中文注释写入后乱码。
 - 写实现区之前，应先确保声明区包含实现逻辑会使用到的变量。
+- 当任务目标是“在现有工程中编辑或生成 POU”时，客户端不应自行切换到 `create_project` 或 `add_controller_device`。
 
 ## 4. 文本工具语义
 
@@ -101,14 +76,19 @@ Current write-path guardrails:
 - `scan_ethercat_devices` 暂缓
 - `create_project/open_project/save_project/add_controller_device` 的真实自动化链路仍可能受到 SP20 环境问题影响
 - 若用户已手工准备项目，优先走“现有项目 + POU 操作”的路径
+- `create_project` 现在属于高风险工具：
+  - 仅用于明确的新工程创建场景
+  - 不能作为“找不到 Application 时的兜底方案”
 
 ## 6. 自然语言到工具的大致映射
 
 - “帮我创建一个 PRG”
   - `open_project`
+  - `list_project_objects`
   - `create_program`
 - “创建一个 FB，名字叫 MotorControl”
   - `open_project`
+  - `list_project_objects`
   - `create_function_block`
 - “读取这个 POU 的声明区”
   - `open_project`

@@ -6,6 +6,7 @@ from io import StringIO
 from pathlib import Path
 import json
 import sys
+import tempfile
 import unittest
 from unittest.mock import patch
 
@@ -62,21 +63,22 @@ class ServerRuntimeTests(unittest.TestCase):
 
     def test_runtime_handles_tool_call(self) -> None:
         runtime = create_runtime(ServerSettings())
-        response = runtime.handle_protocol_message(
-            {
-                "jsonrpc": "2.0",
-                "id": "call-1",
-                "method": "tools/call",
-                "params": {
-                    "name": "create_project",
-                    "arguments": {
-                        "project_path": "D:/Projects/demo.project",
-                        "project_mode": "empty",
-                        "set_as_primary": True,
+        with tempfile.TemporaryDirectory() as temp_dir:
+            response = runtime.handle_protocol_message(
+                {
+                    "jsonrpc": "2.0",
+                    "id": "call-1",
+                    "method": "tools/call",
+                    "params": {
+                        "name": "create_project",
+                        "arguments": {
+                            "project_path": str(Path(temp_dir) / "demo.project"),
+                            "project_mode": "empty",
+                            "set_as_primary": True,
+                        },
                     },
-                },
-            }
-        )
+                }
+            )
         assert response is not None
         self.assertFalse(response["result"]["isError"])
         self.assertTrue(response["result"]["structuredContent"]["ok"])

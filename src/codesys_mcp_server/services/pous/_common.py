@@ -476,7 +476,9 @@ def _find_named_container_path(
             child_path = _join_container_path(current_path, child_name)
             if child_name == target_name:
                 return child_path
-            queue.append((child_path, depth + 1))
+            can_browse = bool(child.get("can_browse", child.get("is_folder", False)))
+            if can_browse:
+                queue.append((child_path, depth + 1))
 
     return None
 

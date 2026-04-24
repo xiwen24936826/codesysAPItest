@@ -15,6 +15,7 @@ from codesys_mcp_server.services.pous import (
     read_textual_implementation,
     replace_text_document,
 )
+from codesys_mcp_server.services.online import scan_network_devices
 from codesys_mcp_server.services.projects import (
     add_controller_device,
     create_project,
@@ -67,6 +68,14 @@ def _bind_find_project_objects(backend: Any) -> ToolHandler:
     return lambda request, request_id=None: find_project_objects(
         request=request,
         project_object_finder=backend,
+        request_id=request_id,
+    )
+
+
+def _bind_scan_network_devices(backend: Any) -> ToolHandler:
+    return lambda request, request_id=None: scan_network_devices(
+        request=request,
+        network_device_scanner=backend,
         request_id=request_id,
     )
 
@@ -175,6 +184,12 @@ TOOL_SPECS = [
         description="Find matching objects by name below a logical container in the project tree.",
         input_schema={"type": "object", "required": ["project_path", "object_name"]},
         handler_builder=_bind_find_project_objects,
+    ),
+    ToolSpec(
+        name="scan_network_devices",
+        description="Scan online targets through a configured CODESYS gateway.",
+        input_schema={"type": "object", "required": []},
+        handler_builder=_bind_scan_network_devices,
     ),
     ToolSpec(
         name="save_project",

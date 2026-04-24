@@ -149,6 +149,32 @@ def _validate_request(request: dict[str, Any]) -> CreateProjectRequest:
             details={"field": "project_path", "value": project_path},
         )
 
+    if not _is_ascii(project_path):
+        raise CreateProjectValidationError(
+            message=(
+                "Field 'project_path' must use an ASCII-only path for project creation. "
+                "This prevents the real IDE backend from creating projects under corrupted "
+                "non-ASCII directories."
+            ),
+            details={"field": "project_path", "value": project_path},
+            code="NON_ASCII_PATH_UNSUPPORTED",
+        )
+
+    project_parent = Path(project_path).parent
+    if not project_parent.exists():
+        raise CreateProjectValidationError(
+            message="The parent directory for 'project_path' must already exist.",
+            details={"field": "project_path", "parent_directory": str(project_parent)},
+            code="PROJECT_PARENT_DIRECTORY_NOT_FOUND",
+        )
+
+    if Path(project_path).exists():
+        raise CreateProjectValidationError(
+            message="The target project file already exists.",
+            details={"field": "project_path", "value": project_path},
+            code="PROJECT_ALREADY_EXISTS",
+        )
+
     if not isinstance(project_mode, str) or project_mode not in SUPPORTED_PROJECT_MODES:
         raise CreateProjectValidationError(
             message="Field 'project_mode' must be one of: empty, template.",
@@ -179,3 +205,11 @@ def _validate_request(request: dict[str, Any]) -> CreateProjectRequest:
         set_as_primary=set_as_primary,
         template_project_path=template_project_path,
     )
+
+
+def _is_ascii(value: str) -> bool:
+    try:
+        value.encode("ascii")
+    except UnicodeEncodeError:
+        return False
+    return True

@@ -54,11 +54,11 @@ class FakeTextDocumentReader:
         container_path: str = "/",
     ) -> dict[str, object]:
         if container_path == "/":
-            return {"children": [{"name": "MyController", "is_folder": True}]}
+            return {"children": [{"name": "MyController", "is_folder": True, "can_browse": True}]}
         if container_path == "MyController":
-            return {"children": [{"name": "PLCLogic", "is_folder": True}]}
+            return {"children": [{"name": "PLCLogic", "is_folder": True, "can_browse": True}]}
         if container_path == "MyController/PLCLogic":
-            return {"children": [{"name": "Application", "is_folder": True}]}
+            return {"children": [{"name": "Application", "is_folder": True, "can_browse": True}]}
         return {"children": []}
 
 
@@ -89,11 +89,11 @@ class FakeTextDocumentWriter:
         container_path: str = "/",
     ) -> dict[str, object]:
         if container_path == "/":
-            return {"children": [{"name": "MyController", "is_folder": True}]}
+            return {"children": [{"name": "MyController", "is_folder": True, "can_browse": True}]}
         if container_path == "MyController":
-            return {"children": [{"name": "PLCLogic", "is_folder": True}]}
+            return {"children": [{"name": "PLCLogic", "is_folder": True, "can_browse": True}]}
         if container_path == "MyController/PLCLogic":
-            return {"children": [{"name": "Application", "is_folder": True}]}
+            return {"children": [{"name": "Application", "is_folder": True, "can_browse": True}]}
         return {"children": []}
 
     def read_text_document(
@@ -239,8 +239,9 @@ class TextDocumentServiceTests(unittest.TestCase):
         self.assertTrue(response["ok"])
         self.assertEqual(response["data"]["document_kind"], "declaration")
         self.assertEqual(response["data"]["text"], "PROGRAM MainProgram")
-        self.assertEqual(reader.calls[0]["document_kind"], "declaration")
-        self.assertEqual(reader.calls[0]["container_path"], NESTED_APPLICATION_PATH)
+        declaration_read = next(call for call in reader.calls if call["document_kind"] == "declaration")
+        self.assertEqual(declaration_read["document_kind"], "declaration")
+        self.assertEqual(declaration_read["container_path"], NESTED_APPLICATION_PATH)
 
     def test_read_textual_implementation_reports_missing_text(self) -> None:
         response = read_textual_implementation(
@@ -294,8 +295,9 @@ class TextDocumentServiceTests(unittest.TestCase):
 
         self.assertTrue(response["ok"])
         self.assertEqual(response["data"]["appended_length"], 23)
-        self.assertEqual(writer.calls[2]["kind"], "append")
-        self.assertEqual(writer.calls[2]["container_path"], NESTED_APPLICATION_PATH)
+        append_call = next(call for call in writer.calls if call["kind"] == "append")
+        self.assertEqual(append_call["kind"], "append")
+        self.assertEqual(append_call["container_path"], NESTED_APPLICATION_PATH)
         self.assertTrue(response["data"]["roundtrip_verified"])
 
     def test_insert_text_document_requires_non_negative_offset(self) -> None:

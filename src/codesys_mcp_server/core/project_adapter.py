@@ -417,6 +417,20 @@ class CodesysProjectAdapter:
             }
         )
 
+    def scan_network_devices(
+        self,
+        gateway_name: str | None = None,
+        use_cached_result: bool = False,
+    ) -> dict[str, Any]:
+        """Scan online targets through a configured gateway."""
+        return self._runner.run_operation(
+            {
+                "operation": "scan_network_devices",
+                "gateway_name": gateway_name,
+                "use_cached_result": use_cached_result,
+            }
+        )
+
     def copy_project_for_testing(
         self,
         source_project_path: str,

@@ -303,6 +303,29 @@ class InMemoryCodesysBackend:
             "matches": matches,
         }
 
+    def scan_network_devices(
+        self,
+        gateway_name: str | None = None,
+        use_cached_result: bool = False,
+    ) -> dict[str, object]:
+        return {
+            "gateway_name": gateway_name or "InMemory Gateway",
+            "gateway_guid": "00000000-0000-0000-0000-000000000001",
+            "use_cached_result": use_cached_result,
+            "targets": [
+                {
+                    "device_name": "Simulated PLC",
+                    "type_name": "Virtual Controller",
+                    "vendor_name": "OpenAI Test Vendor",
+                    "device_id": "SIM-PLC-001",
+                    "address": "1.1.1",
+                    "parent_address": None,
+                    "block_driver": "Gateway",
+                    "block_driver_address": "127.0.0.1",
+                }
+            ],
+        }
+
     def _require_project(self, path: str) -> InMemoryProject:
         try:
             return self._projects[path]

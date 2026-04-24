@@ -454,6 +454,68 @@ def _handle_find_objects(request):
     return result
 
 
+def _normalize_scan_target(target):
+    device_id = None
+    raw_device_id = getattr(target, "device_id", None)
+    if raw_device_id is not None:
+        try:
+            device_id = str(raw_device_id)
+        except Exception:
+            device_id = None
+
+    block_driver = getattr(target, "block_driver", None)
+    if block_driver is not None:
+        try:
+            block_driver = str(block_driver)
+        except Exception:
+            block_driver = None
+
+    return {
+        "device_name": getattr(target, "device_name", None),
+        "type_name": getattr(target, "type_name", None),
+        "vendor_name": getattr(target, "vendor_name", None),
+        "device_id": device_id,
+        "address": getattr(target, "address", None),
+        "parent_address": getattr(target, "parent_address", None),
+        "block_driver": block_driver,
+        "block_driver_address": getattr(target, "block_driver_address", None),
+    }
+
+
+def _resolve_gateway(request):
+    gateways = getattr(scriptengine.online, "gateways", None)
+    if gateways is None or len(gateways) == 0:
+        raise LookupError("No configured gateways are available.")
+
+    gateway_name = request.get("gateway_name")
+    if not gateway_name:
+        return gateways[0]
+
+    matches = [gateway for gateway in gateways if getattr(gateway, "name", None) == gateway_name]
+    if len(matches) == 1:
+        return matches[0]
+    if len(matches) > 1:
+        raise LookupError("Gateway '%s' is ambiguous." % gateway_name)
+    raise LookupError("Gateway '%s' could not be found." % gateway_name)
+
+
+def _handle_scan_network_devices(request):
+    gateway = _resolve_gateway(request)
+    use_cached_result = request.get("use_cached_result", False)
+    if use_cached_result:
+        raw_targets = gateway.get_cached_network_scan_result()
+    else:
+        raw_targets = gateway.perform_network_scan()
+
+    result = {
+        "gateway_name": gateway.name,
+        "gateway_guid": str(gateway.guid),
+        "use_cached_result": use_cached_result,
+        "targets": [_normalize_scan_target(target) for target in raw_targets],
+    }
+    return result
+
+
 def main():
     request = _load_request()
     operation = request.get("operation")
@@ -473,6 +535,7 @@ def main():
         "insert_text_document": _handle_insert_text_document,
         "list_objects": _handle_list_objects,
         "find_objects": _handle_find_objects,
+        "scan_network_devices": _handle_scan_network_devices,
     }
 
     if operation not in handlers:

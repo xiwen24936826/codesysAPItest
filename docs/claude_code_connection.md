@@ -1,29 +1,12 @@
 # Claude Code Connection
 
-## 2026-04-23 Note
-
-Claude Code should now prefer this tool order when creating or editing POU objects:
-
-1. `open_project`
-2. `list_project_objects`
-3. select the returned nested `Application` path
-4. create the target POU
-5. read or write declaration and implementation text
-
-The service layer still accepts `/` or `Application` and tries to auto-resolve the
-real nested container, but the explicit scan-first workflow is now the recommended
-path for reliable demos and client integrations.
-
-During recursive scans, Claude Code should now prefer the returned `can_browse`
-flag instead of relying on `is_folder`.
-
-- recurse when `can_browse` is `true`
-- do not assume `is_folder == false` means the node is not a container
-- use `child_count` only as a hint, not as the recursion rule
-
 更新时间：2026-04-23
 
 本文档固定 Claude Code 作为客户端时的连接方式。
+
+客户端工具选择、扫描顺序和误调用规避规则统一以
+[codex_client_handbook.md](D:\工作资料\codesysAPItest\docs\codex_client_handbook.md)
+为主。本文件只保留 Claude Code 的连接方式、最小启动流程和排查入口。
 
 ## 1. 当前推荐方案
 
@@ -124,9 +107,9 @@ claude mcp add-json --scope project codesys-sp20 "{\"type\":\"stdio\",\"command\
 
 补充说明：
 
-- 当前服务端会在调用方传入 `/` 或 `Application` 时，尽量自动解析到真实项目里的嵌套 `Application` 容器。
+- Claude Code 的推荐工具顺序、`can_browse` 递归规则、以及不要误用 `create_project` 的约束，统一参考
+  [codex_client_handbook.md](D:\工作资料\codesysAPItest\docs\codex_client_handbook.md)。
 - 当前真实后端建议源码和注释使用 ASCII-only，避免中文注释写入后乱码。
-- 如果让 Claude Code 生成实现区代码，最好同时明确要求它先补全声明区变量，再写实现区逻辑。
 
 ## 5. 连接后应该看到什么
 

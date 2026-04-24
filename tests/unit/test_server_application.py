@@ -54,6 +54,19 @@ class FakeBackend:
 
     def create_function_block(self, *args, **kwargs) -> None: return None
     def create_function(self, *args, **kwargs) -> None: return None
+    def scan_network_devices(self, gateway_name: str | None = None, use_cached_result: bool = False) -> dict[str, object]:
+        self.calls.append(
+            {
+                "tool": "scan_network_devices",
+                "gateway_name": gateway_name,
+                "use_cached_result": use_cached_result,
+            }
+        )
+        return {
+            "gateway_name": gateway_name or "Local Gateway",
+            "use_cached_result": use_cached_result,
+            "targets": [],
+        }
     def read_text_document(self, *args, **kwargs) -> dict[str, str]: return {"text": "x"}
     def replace_text_document(self, *args, **kwargs) -> None: return None
     def append_text_document(self, *args, **kwargs) -> None: return None
@@ -136,8 +149,9 @@ class ServerApplicationTests(unittest.TestCase):
         )
         self.assertTrue(result.ok)
         self.assertEqual(result.payload["meta"]["request_id"], "server-001")
-        self.assertEqual(backend.calls[0]["tool"], "list_project_objects")
-        self.assertEqual(backend.calls[-1]["tool"], "create_program")
+        tool_names = [call["tool"] for call in backend.calls]
+        self.assertIn("list_project_objects", tool_names)
+        self.assertIn("create_program", tool_names)
 
     def test_call_tool_dispatches_project_scan(self) -> None:
         backend = FakeBackend()
@@ -153,7 +167,10 @@ class ServerApplicationTests(unittest.TestCase):
         self.assertFalse(result.payload["data"]["children"][0]["is_device"])
         self.assertIsNone(result.payload["data"]["children"][0]["device_identification"])
         self.assertEqual(result.payload["meta"]["request_id"], "server-002")
-        self.assertEqual(backend.calls[0]["tool"], "list_project_objects")
+        self.assertEqual(
+            next(call for call in backend.calls if call["tool"] == "list_project_objects")["tool"],
+            "list_project_objects",
+        )
 
     def test_call_tool_dispatches_project_find(self) -> None:
         backend = FakeBackend()
@@ -166,4 +183,22 @@ class ServerApplicationTests(unittest.TestCase):
         self.assertTrue(result.ok)
         self.assertEqual(result.payload["data"]["matches"][0]["name"], "PLC_PRG")
         self.assertEqual(result.payload["meta"]["request_id"], "server-003")
-        self.assertEqual(backend.calls[0]["tool"], "find_project_objects")
+        self.assertEqual(
+            next(call for call in backend.calls if call["tool"] == "find_project_objects")["tool"],
+            "find_project_objects",
+        )
+
+    def test_call_tool_dispatches_network_scan(self) -> None:
+        backend = FakeBackend()
+        app = create_server_application(backend)
+        result = app.call_tool(
+            name="scan_network_devices",
+            arguments={"gateway_name": "Local Gateway", "use_cached_result": True},
+            request_id="server-004",
+        )
+        self.assertTrue(result.ok)
+        self.assertEqual(result.payload["data"]["gateway_name"], "Local Gateway")
+        self.assertEqual(
+            next(call for call in backend.calls if call["tool"] == "scan_network_devices")["use_cached_result"],
+            True,
+        )

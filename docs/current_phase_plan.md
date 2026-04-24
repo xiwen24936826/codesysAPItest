@@ -2,7 +2,9 @@
 
 Updated: 2026-04-23
 
-This document records the current working plan so future sessions do not depend on chat context alone.
+This document is the canonical phase-rules document for the repository.
+Future sessions should prefer this file for phase boundaries and stable implementation
+decisions instead of rediscovering them from chat context.
 
 ## Goal
 
@@ -280,9 +282,9 @@ Codex can understand natural language and decompose tasks, but it still needs re
 
 Current client-facing guidance should come from:
 
-- `docs/codex_client_handbook.md`
-- `docs/api_specs/mcp_tools_phase1.md`
-- this document
+- `docs/codex_client_handbook.md` for the canonical client-use rules
+- `docs/api_specs/mcp_tools_phase1.md` for MCP tool contract details
+- this document for phase boundaries and implementation constraints
 
 Current recommended tool order for new POU work is:
 
