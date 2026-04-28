@@ -14,6 +14,7 @@ if str(SRC_PATH) not in sys.path:
     sys.path.insert(0, str(SRC_PATH))
 
 from codesys_mcp_server.tools import ToolRegistry, build_tool_registry
+from codesys_mcp_server.tools.catalog import TOOL_CATALOG_BY_NAME
 
 
 class FakeBackend:
@@ -34,9 +35,15 @@ class FakeBackend:
 class ToolRegistryTests(unittest.TestCase):
     def test_register_rejects_duplicate_names(self) -> None:
         registry = ToolRegistry()
-        registry.register("x", "desc", {}, lambda request, request_id=None: {})
+        registry.register(
+            TOOL_CATALOG_BY_NAME["create_project"],
+            lambda request, request_id=None: {},
+        )
         with self.assertRaises(ValueError):
-            registry.register("x", "desc", {}, lambda request, request_id=None: {})
+            registry.register(
+                TOOL_CATALOG_BY_NAME["create_project"],
+                lambda request, request_id=None: {},
+            )
 
     def test_build_tool_registry_contains_phase1_tools(self) -> None:
         registry = build_tool_registry(FakeBackend())

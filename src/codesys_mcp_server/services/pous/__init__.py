@@ -4,6 +4,8 @@ from .append_text_document import append_text_document
 from .create_function import create_function
 from .create_function_block import create_function_block
 from .create_program import create_program
+from .edit_pou_transaction import edit_pou_transaction
+from .generate_pou_transaction import generate_pou_transaction
 from .insert_text_document import insert_text_document
 from .read_textual_declaration import read_textual_declaration
 from .read_textual_implementation import read_textual_implementation
@@ -15,6 +17,8 @@ __all__ = [
     "create_function",
     "create_function_block",
     "create_program",
+    "edit_pou_transaction",
+    "generate_pou_transaction",
     "insert_text_document",
     "read_textual_declaration",
     "read_textual_implementation",

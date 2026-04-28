@@ -108,16 +108,18 @@ class LocalCodesysMcpClient:
         module: str | None = None,
         request_id: str | None = None,
     ) -> ToolResult:
+        arguments: dict[str, Any] = {
+            "project_path": project_path,
+            "device_name": device_name,
+            "device_type": device_type,
+            "device_id": device_id,
+            "device_version": device_version,
+        }
+        if module is not None:
+            arguments["module"] = module
         return self.call_tool(
             "add_controller_device",
-            {
-                "project_path": project_path,
-                "device_name": device_name,
-                "device_type": device_type,
-                "device_id": device_id,
-                "device_version": device_version,
-                "module": module,
-            },
+            arguments,
             request_id=request_id,
         )
 
@@ -131,16 +133,18 @@ class LocalCodesysMcpClient:
         interfaces: list[str] | None = None,
         request_id: str | None = None,
     ) -> ToolResult:
+        arguments: dict[str, Any] = {
+            "project_path": project_path,
+            "container_path": container_path,
+            "name": name,
+            "language": language,
+            "interfaces": interfaces or [],
+        }
+        if base_type is not None:
+            arguments["base_type"] = base_type
         return self.call_tool(
             "create_function_block",
-            {
-                "project_path": project_path,
-                "container_path": container_path,
-                "name": name,
-                "language": language,
-                "base_type": base_type,
-                "interfaces": interfaces or [],
-            },
+            arguments,
             request_id=request_id,
         )
 

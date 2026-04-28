@@ -8,6 +8,7 @@ from __future__ import print_function
 
 import json
 import os
+import re
 import traceback
 
 import scriptengine
@@ -110,6 +111,206 @@ def _get_text_document(target_object, document_kind):
         return target_object.textual_implementation
 
     raise LookupError("Unsupported document kind: %s" % document_kind)
+
+
+def _normalize_newlines(text):
+    return text.replace("\r\n", "\n").replace("\r", "\n")
+
+
+def _first_mismatch_index(expected_text, actual_text):
+    shared_length = min(len(expected_text), len(actual_text))
+    for index in range(shared_length):
+        if expected_text[index] != actual_text[index]:
+            return index
+    return shared_length
+
+
+def _verify_roundtrip(expected_text, actual_text, verify_mode):
+    if expected_text == actual_text:
+        return {"ok": True, "mismatch_index": None}
+    if verify_mode == "normalize_newlines":
+        normalized_expected = _normalize_newlines(expected_text)
+        normalized_actual = _normalize_newlines(actual_text)
+        if normalized_expected == normalized_actual:
+            return {"ok": True, "mismatch_index": None}
+        return {
+            "ok": False,
+            "mismatch_index": _first_mismatch_index(normalized_expected, normalized_actual),
+        }
+    return {
+        "ok": False,
+        "mismatch_index": _first_mismatch_index(expected_text, actual_text),
+    }
+
+
+IDENTIFIER_PATTERN = re.compile(r"[A-Za-z_][A-Za-z0-9_]*")
+VAR_BLOCK_PATTERN = re.compile(
+    r"\bVAR(?:_[A-Z]+)?\b(.*?)\bEND_VAR\b", re.IGNORECASE | re.DOTALL
+)
+ST_KEYWORDS = {
+    "AND",
+    "ARRAY",
+    "BY",
+    "CASE",
+    "CONSTANT",
+    "DO",
+    "ELSE",
+    "ELSIF",
+    "END_CASE",
+    "END_FOR",
+    "END_FUNCTION",
+    "END_FUNCTION_BLOCK",
+    "END_IF",
+    "END_METHOD",
+    "END_PROGRAM",
+    "END_REPEAT",
+    "END_VAR",
+    "END_WHILE",
+    "EXIT",
+    "FALSE",
+    "FOR",
+    "FUNCTION",
+    "FUNCTION_BLOCK",
+    "IF",
+    "MOD",
+    "NOT",
+    "OF",
+    "OR",
+    "PROGRAM",
+    "REPEAT",
+    "RETURN",
+    "THEN",
+    "TO",
+    "TRUE",
+    "UNTIL",
+    "VAR",
+    "VAR_INPUT",
+    "VAR_IN_OUT",
+    "VAR_OUTPUT",
+    "VAR_TEMP",
+    "WHILE",
+    "XOR",
+}
+IEC_TYPES = {
+    "BOOL",
+    "BYTE",
+    "DATE",
+    "DATE_AND_TIME",
+    "DINT",
+    "DWORD",
+    "INT",
+    "LDATE",
+    "LDATE_AND_TIME",
+    "LINT",
+    "LREAL",
+    "LTIME",
+    "REAL",
+    "SINT",
+    "STRING",
+    "TIME",
+    "TIME_OF_DAY",
+    "TOD",
+    "UDINT",
+    "UINT",
+    "ULINT",
+    "USINT",
+    "WORD",
+}
+
+
+def _strip_st_comments(text):
+    text = re.sub(r"\(\*.*?\*\)", " ", text, flags=re.DOTALL)
+    text = re.sub(r"//.*", " ", text)
+    return text
+
+
+def _collect_declared_identifiers(declaration_text):
+    identifiers = set()
+    sanitized = _strip_st_comments(declaration_text)
+    for match in VAR_BLOCK_PATTERN.finditer(sanitized):
+        block = match.group(1)
+        for raw_line in block.splitlines():
+            line = raw_line.strip()
+            if not line or ":" not in line or line.startswith("{"):
+                continue
+            left = line.split(":", 1)[0]
+            left = re.sub(r"\bAT\b.*", "", left, flags=re.IGNORECASE).strip()
+            if not left:
+                continue
+            for item in left.split(","):
+                identifier_match = IDENTIFIER_PATTERN.search(item)
+                if identifier_match:
+                    identifiers.add(identifier_match.group(0))
+    return identifiers
+
+
+def _collect_referenced_identifiers(implementation_text):
+    sanitized = _strip_st_comments(implementation_text)
+    sanitized = re.sub(r"'(?:''|[^'])*'", " ", sanitized)
+    identifiers = set()
+    for match in IDENTIFIER_PATTERN.finditer(sanitized):
+        identifier = match.group(0)
+        normalized = identifier.upper()
+        if normalized in ST_KEYWORDS or normalized in IEC_TYPES:
+            continue
+        if match.start() > 0 and sanitized[match.start() - 1] == ".":
+            continue
+        trailing = sanitized[match.end() :].lstrip()
+        if trailing.startswith("("):
+            continue
+        identifiers.add(identifier)
+    return identifiers
+
+
+def _find_missing_declarations(declaration_text, implementation_text):
+    if not implementation_text.strip():
+        return []
+    declared_identifiers = _collect_declared_identifiers(declaration_text)
+    referenced_identifiers = _collect_referenced_identifiers(implementation_text)
+    missing = sorted(
+        [identifier for identifier in referenced_identifiers if identifier not in declared_identifiers]
+    )
+    return missing
+
+
+def _resolve_container_with_fallback(project, container_path):
+    try:
+        return _resolve_container(project, container_path), container_path
+    except LookupError:
+        normalized = (container_path or "").strip()
+        if normalized not in ("/", "Application", "/Application"):
+            raise
+        resolved = _find_container_path_by_name(project, "Application")
+        if resolved is None:
+            return _resolve_container(project, container_path), container_path
+        return _resolve_container(project, resolved), resolved
+
+
+def _find_container_path_by_name(parent, target_name, max_depth=8):
+    queue = [("/", parent, 0)]
+    seen = set()
+    while queue:
+        current_path, current_obj, depth = queue.pop(0)
+        if current_path in seen or depth > max_depth:
+            continue
+        seen.add(current_path)
+        try:
+            children = list(current_obj.get_children(False))
+        except Exception:
+            children = []
+        for child in children:
+            child_name = _get_object_name(child)
+            child_path = child_name if current_path in ("", "/") else "%s/%s" % (current_path.strip("/"), child_name)
+            if child_name == target_name:
+                return child_path
+            try:
+                list(child.get_children(False))
+                can_browse = True
+            except Exception:
+                can_browse = False
+            if can_browse:
+                queue.append((child_path, child, depth + 1))
+    return None
 
 
 def _describe_children(parent):
@@ -540,6 +741,251 @@ def _handle_scan_network_devices(request):
     return result
 
 
+def _handle_generate_pou_transaction(request):
+    project = _open_project(request)
+    verify_mode = request.get("verify_mode") or "normalize_newlines"
+    requested_container_path = request.get("container_path")
+    container, resolved_container_path = _resolve_container_with_fallback(project, requested_container_path)
+
+    pou_kind = request.get("pou_kind")
+    pou_type_mapping = {
+        "program": scriptengine.PouType.Program,
+        "function_block": scriptengine.PouType.FunctionBlock,
+        "function": scriptengine.PouType.Function,
+    }
+    if pou_kind not in pou_type_mapping:
+        project.close()
+        raise LookupError("Unsupported pou_kind: %s" % pou_kind)
+
+    return_type = None
+    base_type = None
+    interfaces = None
+    if pou_kind == "function":
+        return_type = request.get("return_type")
+    elif pou_kind == "function_block":
+        base_type = request.get("base_type")
+        interfaces = _normalize_interfaces(request.get("interfaces"))
+
+    created_object = container.create_pou(
+        name=request["pou_name"],
+        type=pou_type_mapping[pou_kind],
+        language=_resolve_language(request.get("language")),
+        return_type=return_type,
+        base_type=base_type,
+        interfaces=interfaces,
+    )
+
+    declaration_text = request.get("declaration_text", "")
+    implementation_text = request.get("implementation_text", "")
+
+    declaration_document = _get_text_document(created_object, "declaration")
+    implementation_document = _get_text_document(created_object, "implementation")
+
+    declaration_document.replace(new_text=declaration_text)
+    implementation_document.replace(new_text=implementation_text)
+
+    roundtrip_declaration = declaration_document.text
+    roundtrip_implementation = implementation_document.text
+
+    declaration_verification = _verify_roundtrip(
+        declaration_text, roundtrip_declaration, verify_mode
+    )
+    implementation_verification = _verify_roundtrip(
+        implementation_text, roundtrip_implementation, verify_mode
+    )
+    missing_identifiers = _find_missing_declarations(
+        roundtrip_declaration, roundtrip_implementation
+    )
+    consistency_ok = len(missing_identifiers) == 0
+
+    verification_ok = (
+        declaration_verification["ok"]
+        and implementation_verification["ok"]
+        and consistency_ok
+    )
+
+    saved = False
+    if verification_ok:
+        project.save()
+        saved = True
+
+    result = {
+        "project_path": project.path,
+        "requested_container_path": requested_container_path,
+        "resolved_container_path": resolved_container_path,
+        "pou_name": _get_object_name(created_object),
+        "pou_kind": pou_kind,
+        "language": request.get("language", "ST"),
+        "created": True,
+        "written": {"declaration": True, "implementation": True},
+        "verification": {
+            "mode": verify_mode,
+            "ok": verification_ok,
+            "declaration_roundtrip_verified": declaration_verification["ok"],
+            "implementation_roundtrip_verified": implementation_verification["ok"],
+            "declaration_mismatch_index": declaration_verification["mismatch_index"],
+            "implementation_mismatch_index": implementation_verification["mismatch_index"],
+            "consistency_ok": consistency_ok,
+            "missing_identifiers": missing_identifiers,
+        },
+        "saved": saved,
+        "closed": True,
+        "location": {
+            "container_path": resolved_container_path,
+            "object_name": _get_object_name(created_object),
+        },
+    }
+    project.close()
+    return result
+
+
+def _apply_text_operations(current_text, operations):
+    expected = current_text
+    for operation in operations:
+        op = operation.get("op")
+        if op == "replace":
+            expected = operation.get("new_text", "")
+            continue
+        if op == "append":
+            expected = expected + operation.get("text", "")
+            continue
+        if op == "insert":
+            text = operation.get("text", "")
+            offset = int(operation.get("offset", 0))
+            expected = expected[:offset] + text + expected[offset:]
+            continue
+        if op == "replace_line":
+            line_number = int(operation.get("line_number", 0))
+            new_text = operation.get("new_text", "")
+            lines = expected.splitlines(True)
+            if line_number < 1 or line_number > len(lines):
+                raise ValueError("line_number is outside the document line range.")
+            target_index = line_number - 1
+            original_line = lines[target_index]
+            line_ending = ""
+            if original_line.endswith("\r\n"):
+                line_ending = "\r\n"
+            elif original_line.endswith("\n") or original_line.endswith("\r"):
+                line_ending = original_line[-1]
+            lines[target_index] = new_text + line_ending
+            expected = "".join(lines)
+            continue
+        raise LookupError("Unsupported operation: %s" % op)
+    return expected
+
+
+def _handle_edit_pou_transaction(request):
+    project = _open_project(request)
+    verify_mode = request.get("verify_mode") or "normalize_newlines"
+    requested_container_path = request.get("container_path")
+    container, resolved_container_path = _resolve_container_with_fallback(project, requested_container_path)
+    target_object = _find_child(container, request["pou_name"])
+
+    operations = request.get("operations") or []
+    operations_by_kind = {"declaration": [], "implementation": []}
+    for operation in operations:
+        operations_by_kind.get(operation.get("document_kind"), []).append(operation)
+
+    declaration_document = _get_text_document(target_object, "declaration")
+    implementation_document = _get_text_document(target_object, "implementation")
+    before_declaration = declaration_document.text
+    before_implementation = implementation_document.text
+
+    expected_declaration = _apply_text_operations(
+        before_declaration, operations_by_kind["declaration"]
+    )
+    expected_implementation = _apply_text_operations(
+        before_implementation, operations_by_kind["implementation"]
+    )
+
+    for operation in operations_by_kind["declaration"]:
+        op = operation.get("op")
+        if op == "replace":
+            declaration_document.replace(new_text=operation.get("new_text", ""))
+        elif op == "append":
+            declaration_document.append(operation.get("text", ""))
+        elif op == "insert":
+            declaration_document.insert(text=operation.get("text", ""), offset=int(operation.get("offset", 0)))
+        elif op == "replace_line":
+            declaration_document.replace_line(int(operation.get("line_number", 0)), operation.get("new_text", ""))
+        else:
+            project.close()
+            raise LookupError("Unsupported operation: %s" % op)
+
+    for operation in operations_by_kind["implementation"]:
+        op = operation.get("op")
+        if op == "replace":
+            implementation_document.replace(new_text=operation.get("new_text", ""))
+        elif op == "append":
+            implementation_document.append(operation.get("text", ""))
+        elif op == "insert":
+            implementation_document.insert(text=operation.get("text", ""), offset=int(operation.get("offset", 0)))
+        elif op == "replace_line":
+            implementation_document.replace_line(int(operation.get("line_number", 0)), operation.get("new_text", ""))
+        else:
+            project.close()
+            raise LookupError("Unsupported operation: %s" % op)
+
+    roundtrip_declaration = declaration_document.text
+    roundtrip_implementation = implementation_document.text
+
+    declaration_verification = _verify_roundtrip(
+        expected_declaration, roundtrip_declaration, verify_mode
+    )
+    implementation_verification = _verify_roundtrip(
+        expected_implementation, roundtrip_implementation, verify_mode
+    )
+    missing_identifiers = _find_missing_declarations(
+        roundtrip_declaration, roundtrip_implementation
+    )
+    consistency_ok = len(missing_identifiers) == 0
+
+    verification_ok = (
+        declaration_verification["ok"]
+        and implementation_verification["ok"]
+        and consistency_ok
+    )
+
+    saved = False
+    if verification_ok:
+        project.save()
+        saved = True
+
+    result = {
+        "project_path": project.path,
+        "requested_container_path": requested_container_path,
+        "resolved_container_path": resolved_container_path,
+        "pou_name": request["pou_name"],
+        "operations_applied": operations,
+        "verification": {
+            "mode": verify_mode,
+            "ok": verification_ok,
+            "declaration_roundtrip_verified": declaration_verification["ok"],
+            "implementation_roundtrip_verified": implementation_verification["ok"],
+            "declaration_mismatch_index": declaration_verification["mismatch_index"],
+            "implementation_mismatch_index": implementation_verification["mismatch_index"],
+            "consistency_ok": consistency_ok,
+            "missing_identifiers": missing_identifiers,
+        },
+        "saved": saved,
+        "closed": True,
+        "before": {
+            "declaration_length": len(before_declaration),
+            "implementation_length": len(before_implementation),
+        },
+        "after": {
+            "declaration_length": len(roundtrip_declaration),
+            "implementation_length": len(roundtrip_implementation),
+        },
+        "location": {
+            "container_path": resolved_container_path,
+            "object_name": request["pou_name"],
+        },
+    }
+    project.close()
+    return result
+
+
 def main():
     request = _load_request()
     operation = request.get("operation")
@@ -561,6 +1007,8 @@ def main():
         "list_objects": _handle_list_objects,
         "find_objects": _handle_find_objects,
         "scan_network_devices": _handle_scan_network_devices,
+        "generate_pou_transaction": _handle_generate_pou_transaction,
+        "edit_pou_transaction": _handle_edit_pou_transaction,
     }
 
     if operation not in handlers:

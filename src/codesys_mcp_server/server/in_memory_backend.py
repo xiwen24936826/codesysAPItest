@@ -222,6 +222,186 @@ class InMemoryCodesysBackend:
             return
         raise LookupError("Unsupported document kind: %s" % document_kind)
 
+    def generate_pou_transaction(
+        self,
+        project_path: str,
+        container_path: str,
+        pou_name: str,
+        pou_kind: str,
+        declaration_text: str,
+        implementation_text: str,
+        language: str | None = None,
+        return_type: str | None = None,
+        base_type: str | None = None,
+        interfaces: list[str] | None = None,
+        write_strategy: str | None = None,
+        verify_mode: str | None = None,
+    ) -> dict[str, object]:
+        if pou_kind == "program":
+            self.create_program(
+                project_path=project_path,
+                container_path=container_path,
+                name=pou_name,
+                language=language or "ST",
+            )
+        elif pou_kind == "function_block":
+            self.create_function_block(
+                project_path=project_path,
+                container_path=container_path,
+                name=pou_name,
+                language=language or "ST",
+                base_type=base_type,
+                interfaces=interfaces,
+            )
+        elif pou_kind == "function":
+            if not return_type:
+                raise ValueError("return_type is required for function POUs.")
+            self.create_function(
+                project_path=project_path,
+                container_path=container_path,
+                name=pou_name,
+                return_type=return_type,
+                language=language or "ST",
+            )
+        else:
+            raise LookupError("Unsupported pou_kind: %s" % pou_kind)
+
+        self.replace_text_document(
+            project_path=project_path,
+            container_path=container_path,
+            object_name=pou_name,
+            document_kind="declaration",
+            new_text=declaration_text,
+        )
+        self.replace_text_document(
+            project_path=project_path,
+            container_path=container_path,
+            object_name=pou_name,
+            document_kind="implementation",
+            new_text=implementation_text,
+        )
+
+        actual_declaration = self.read_text_document(
+            project_path=project_path,
+            container_path=container_path,
+            object_name=pou_name,
+            document_kind="declaration",
+        )["text"]
+        actual_implementation = self.read_text_document(
+            project_path=project_path,
+            container_path=container_path,
+            object_name=pou_name,
+            document_kind="implementation",
+        )["text"]
+
+        verification = _verify_roundtrip_pair(
+            expected_declaration=declaration_text,
+            actual_declaration=actual_declaration,
+            expected_implementation=implementation_text,
+            actual_implementation=actual_implementation,
+            verify_mode=verify_mode or "normalize_newlines",
+        )
+        return {
+            "project_path": project_path,
+            "requested_container_path": container_path,
+            "resolved_container_path": container_path,
+            "pou_name": pou_name,
+            "pou_kind": pou_kind,
+            "language": language or "ST",
+            "created": True,
+            "written": {"declaration": True, "implementation": True},
+            "verification": verification,
+            "saved": verification.get("ok", False),
+            "closed": True,
+            "location": {"container_path": container_path, "object_name": pou_name},
+        }
+
+    def edit_pou_transaction(
+        self,
+        project_path: str,
+        container_path: str,
+        pou_name: str,
+        operations: list[dict[str, Any]],
+        verify_mode: str | None = None,
+    ) -> dict[str, object]:
+        before_declaration = self.read_text_document(
+            project_path=project_path,
+            container_path=container_path,
+            object_name=pou_name,
+            document_kind="declaration",
+        )["text"]
+        before_implementation = self.read_text_document(
+            project_path=project_path,
+            container_path=container_path,
+            object_name=pou_name,
+            document_kind="implementation",
+        )["text"]
+
+        declaration_ops = [op for op in operations if op.get("document_kind") == "declaration"]
+        implementation_ops = [op for op in operations if op.get("document_kind") == "implementation"]
+
+        expected_declaration = _apply_text_operations(before_declaration, declaration_ops)
+        expected_implementation = _apply_text_operations(before_implementation, implementation_ops)
+
+        for operation in declaration_ops:
+            _apply_backend_operation(
+                backend=self,
+                project_path=project_path,
+                container_path=container_path,
+                pou_name=pou_name,
+                document_kind="declaration",
+                operation=operation,
+            )
+        for operation in implementation_ops:
+            _apply_backend_operation(
+                backend=self,
+                project_path=project_path,
+                container_path=container_path,
+                pou_name=pou_name,
+                document_kind="implementation",
+                operation=operation,
+            )
+
+        after_declaration = self.read_text_document(
+            project_path=project_path,
+            container_path=container_path,
+            object_name=pou_name,
+            document_kind="declaration",
+        )["text"]
+        after_implementation = self.read_text_document(
+            project_path=project_path,
+            container_path=container_path,
+            object_name=pou_name,
+            document_kind="implementation",
+        )["text"]
+
+        verification = _verify_roundtrip_pair(
+            expected_declaration=expected_declaration,
+            actual_declaration=after_declaration,
+            expected_implementation=expected_implementation,
+            actual_implementation=after_implementation,
+            verify_mode=verify_mode or "normalize_newlines",
+        )
+        return {
+            "project_path": project_path,
+            "requested_container_path": container_path,
+            "resolved_container_path": container_path,
+            "pou_name": pou_name,
+            "operations_applied": operations,
+            "verification": verification,
+            "saved": verification.get("ok", False),
+            "closed": True,
+            "before": {
+                "declaration_length": len(before_declaration),
+                "implementation_length": len(before_implementation),
+            },
+            "after": {
+                "declaration_length": len(after_declaration),
+                "implementation_length": len(after_implementation),
+            },
+            "location": {"container_path": container_path, "object_name": pou_name},
+        }
+
     def list_objects(
         self,
         project_path: str,
@@ -397,3 +577,139 @@ class InMemoryCodesysBackend:
 
         lines[target_index] = new_text + line_ending
         return "".join(lines)
+
+
+def _normalize_newlines(text: str) -> str:
+    return text.replace("\r\n", "\n").replace("\r", "\n")
+
+
+def _first_mismatch_index(expected_text: str, actual_text: str) -> int:
+    shared_length = min(len(expected_text), len(actual_text))
+    for index in range(shared_length):
+        if expected_text[index] != actual_text[index]:
+            return index
+    return shared_length
+
+
+def _verify_roundtrip(expected_text: str, actual_text: str, verify_mode: str) -> dict[str, object]:
+    if expected_text == actual_text:
+        return {"ok": True, "mismatch_index": None}
+    if verify_mode == "normalize_newlines":
+        normalized_expected = _normalize_newlines(expected_text)
+        normalized_actual = _normalize_newlines(actual_text)
+        if normalized_expected == normalized_actual:
+            return {"ok": True, "mismatch_index": None}
+        return {
+            "ok": False,
+            "mismatch_index": _first_mismatch_index(normalized_expected, normalized_actual),
+        }
+    return {"ok": False, "mismatch_index": _first_mismatch_index(expected_text, actual_text)}
+
+
+def _verify_roundtrip_pair(
+    *,
+    expected_declaration: str,
+    actual_declaration: str,
+    expected_implementation: str,
+    actual_implementation: str,
+    verify_mode: str,
+) -> dict[str, object]:
+    declaration = _verify_roundtrip(expected_declaration, actual_declaration, verify_mode)
+    implementation = _verify_roundtrip(expected_implementation, actual_implementation, verify_mode)
+    ok = bool(declaration["ok"]) and bool(implementation["ok"])
+    return {
+        "mode": verify_mode,
+        "ok": ok,
+        "declaration_roundtrip_verified": bool(declaration["ok"]),
+        "implementation_roundtrip_verified": bool(implementation["ok"]),
+        "declaration_mismatch_index": declaration["mismatch_index"],
+        "implementation_mismatch_index": implementation["mismatch_index"],
+        "consistency_ok": True,
+        "missing_identifiers": [],
+    }
+
+
+def _apply_text_operations(current_text: str, operations: list[dict[str, Any]]) -> str:
+    expected = current_text
+    for operation in operations:
+        op = operation.get("op")
+        if op == "replace":
+            expected = str(operation.get("new_text", ""))
+            continue
+        if op == "append":
+            expected = expected + str(operation.get("text", ""))
+            continue
+        if op == "insert":
+            text = str(operation.get("text", ""))
+            offset = int(operation.get("offset", 0))
+            expected = expected[:offset] + text + expected[offset:]
+            continue
+        if op == "replace_line":
+            line_number = int(operation.get("line_number", 0))
+            new_text = str(operation.get("new_text", ""))
+            lines = expected.splitlines(True)
+            if line_number < 1 or line_number > len(lines):
+                raise ValueError("line_number is outside the document line range.")
+            target_index = line_number - 1
+            original_line = lines[target_index]
+            line_ending = ""
+            if original_line.endswith("\r\n"):
+                line_ending = "\r\n"
+            elif original_line.endswith("\n") or original_line.endswith("\r"):
+                line_ending = original_line[-1]
+            lines[target_index] = new_text + line_ending
+            expected = "".join(lines)
+            continue
+        raise LookupError("Unsupported operation: %s" % op)
+    return expected
+
+
+def _apply_backend_operation(
+    *,
+    backend: InMemoryCodesysBackend,
+    project_path: str,
+    container_path: str,
+    pou_name: str,
+    document_kind: str,
+    operation: dict[str, Any],
+) -> None:
+    op = operation.get("op")
+    if op == "replace":
+        backend.replace_text_document(
+            project_path=project_path,
+            container_path=container_path,
+            object_name=pou_name,
+            document_kind=document_kind,
+            new_text=str(operation.get("new_text", "")),
+        )
+        return
+    if op == "append":
+        backend.append_text_document(
+            project_path=project_path,
+            container_path=container_path,
+            object_name=pou_name,
+            document_kind=document_kind,
+            text_to_append=str(operation.get("text", "")),
+        )
+        return
+    if op == "insert":
+        backend.insert_text_document(
+            project_path=project_path,
+            container_path=container_path,
+            object_name=pou_name,
+            document_kind=document_kind,
+            text_to_insert=str(operation.get("text", "")),
+            insertion_offset=int(operation.get("offset", 0)),
+        )
+        return
+    if op == "replace_line":
+        backend.replace_text_line(
+            project_path=project_path,
+            container_path=container_path,
+            object_name=pou_name,
+            document_kind=document_kind,
+            line_number=int(operation.get("line_number", 0)),
+            new_text=str(operation.get("new_text", "")),
+        )
+        return
+    raise LookupError("Unsupported operation: %s" % op)

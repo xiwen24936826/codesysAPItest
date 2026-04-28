@@ -407,6 +407,58 @@ class CodesysProjectAdapter:
             }
         )
 
+    def generate_pou_transaction(
+        self,
+        project_path: str,
+        container_path: str,
+        pou_name: str,
+        pou_kind: str,
+        declaration_text: str,
+        implementation_text: str,
+        language: str | None = None,
+        return_type: str | None = None,
+        base_type: str | None = None,
+        interfaces: list[str] | None = None,
+        write_strategy: str | None = None,
+        verify_mode: str | None = None,
+    ) -> dict[str, Any]:
+        return self._runner.run_operation(
+            {
+                "operation": "generate_pou_transaction",
+                "project_path": project_path,
+                "container_path": container_path,
+                "pou_name": pou_name,
+                "pou_kind": pou_kind,
+                "language": language,
+                "return_type": return_type,
+                "base_type": base_type,
+                "interfaces": interfaces or [],
+                "declaration_text": declaration_text,
+                "implementation_text": implementation_text,
+                "write_strategy": write_strategy,
+                "verify_mode": verify_mode,
+            }
+        )
+
+    def edit_pou_transaction(
+        self,
+        project_path: str,
+        container_path: str,
+        pou_name: str,
+        operations: list[dict[str, Any]],
+        verify_mode: str | None = None,
+    ) -> dict[str, Any]:
+        return self._runner.run_operation(
+            {
+                "operation": "edit_pou_transaction",
+                "project_path": project_path,
+                "container_path": container_path,
+                "pou_name": pou_name,
+                "operations": operations,
+                "verify_mode": verify_mode,
+            }
+        )
+
     def list_objects(
         self,
         project_path: str,

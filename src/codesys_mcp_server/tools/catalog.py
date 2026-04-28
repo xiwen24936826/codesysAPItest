@@ -69,6 +69,8 @@ TOOL_CODE_BY_NAME: dict[str, str] = {
     "append_text_document": "POU-007",
     "insert_text_document": "POU-008",
     "replace_line": "POU-009",
+    "generate_pou_transaction": "POU-010",
+    "edit_pou_transaction": "POU-011",
     "scan_network_devices": "DEV-001",
 }
 
@@ -89,6 +91,8 @@ TOOL_CATEGORY_BY_NAME: dict[str, str] = {
     "append_text_document": "pous",
     "insert_text_document": "pous",
     "replace_line": "pous",
+    "generate_pou_transaction": "pous",
+    "edit_pou_transaction": "pous",
     "scan_network_devices": "devices",
 }
 
@@ -414,6 +418,97 @@ TOOL_CATALOG: tuple[ToolCatalogEntry, ...] = (
         workflow_ids=("existing_project_edit_flow",),
         risk_level="caution",
         preferred_predecessors=("open_project",),
+    ),
+    ToolCatalogEntry(
+        name="generate_pou_transaction",
+        description="Open a project, create a POU, write declaration/implementation, save, and close in a single IDE run.",
+        input_schema=_object_schema(
+            required=[
+                "project_path",
+                "container_path",
+                "pou_name",
+                "pou_kind",
+                "declaration_text",
+                "implementation_text",
+            ],
+            properties={
+                "project_path": {"type": "string"},
+                "container_path": {"type": "string"},
+                "pou_name": {"type": "string"},
+                "pou_kind": {
+                    "type": "string",
+                    "enum": ["program", "function_block", "function"],
+                },
+                "language": {"type": "string"},
+                "return_type": {"type": "string"},
+                "base_type": {"type": "string"},
+                "interfaces": {"type": "array", "items": {"type": "string"}},
+                "declaration_text": {"type": "string"},
+                "implementation_text": {"type": "string"},
+                "write_strategy": {
+                    "type": "string",
+                    "enum": ["replace"],
+                },
+                "verify_mode": {
+                    "type": "string",
+                    "enum": ["exact", "normalize_newlines"],
+                },
+            },
+        ),
+        handler_key="generate_pou_transaction",
+        domain="pous",
+        workflow_ids=("existing_project_edit_flow", "new_project_flow"),
+        risk_level="dangerous",
+        preferred_predecessors=("open_project",),
+        notes=(
+            "This tool always saves and closes the project when it succeeds.",
+            "Prefer this tool over many small edits when IDE startup time dominates.",
+        ),
+    ),
+    ToolCatalogEntry(
+        name="edit_pou_transaction",
+        description="Open a project, edit one POU by applying a patch plan, verify, save, and close in a single IDE run.",
+        input_schema=_object_schema(
+            required=["project_path", "container_path", "pou_name", "operations"],
+            properties={
+                "project_path": {"type": "string"},
+                "container_path": {"type": "string"},
+                "pou_name": {"type": "string"},
+                "operations": {
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "document_kind": {
+                                "type": "string",
+                                "enum": ["declaration", "implementation"],
+                            },
+                            "op": {
+                                "type": "string",
+                                "enum": ["replace", "append", "insert", "replace_line"],
+                            },
+                            "new_text": {"type": "string"},
+                            "text": {"type": "string"},
+                            "offset": {"type": "integer"},
+                            "line_number": {"type": "integer"},
+                        },
+                    },
+                },
+                "verify_mode": {
+                    "type": "string",
+                    "enum": ["exact", "normalize_newlines"],
+                },
+            },
+        ),
+        handler_key="edit_pou_transaction",
+        domain="pous",
+        workflow_ids=("existing_project_edit_flow",),
+        risk_level="dangerous",
+        preferred_predecessors=("open_project",),
+        notes=(
+            "Applies operations in order.",
+            "Verification includes a round-trip readback of any edited documents.",
+        ),
     ),
 )
 

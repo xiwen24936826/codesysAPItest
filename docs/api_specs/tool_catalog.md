@@ -629,3 +629,162 @@
   "additionalProperties": false
 }
 ```
+
+## `generate_pou_transaction`
+
+- 代码：`POU-010`
+- 类别：`pous / 程序组织单元`
+- 功能：Open a project, create a POU, write declaration/implementation, save, and close in a single IDE run.
+- 风险等级：`dangerous / 高风险`
+- 工作流：`现有工程编辑流`, `新建工程流`
+- 推荐前置工具：`open_project`
+- 备注：This tool always saves and closes the project when it succeeds. Prefer this tool over many small edits when IDE startup time dominates.
+
+输入字段：
+
+```json
+{
+  "type": "object",
+  "required": [
+    "project_path",
+    "container_path",
+    "pou_name",
+    "pou_kind",
+    "declaration_text",
+    "implementation_text"
+  ],
+  "properties": {
+    "project_path": {
+      "type": "string"
+    },
+    "container_path": {
+      "type": "string"
+    },
+    "pou_name": {
+      "type": "string"
+    },
+    "pou_kind": {
+      "type": "string",
+      "enum": [
+        "program",
+        "function_block",
+        "function"
+      ]
+    },
+    "language": {
+      "type": "string"
+    },
+    "return_type": {
+      "type": "string"
+    },
+    "base_type": {
+      "type": "string"
+    },
+    "interfaces": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "declaration_text": {
+      "type": "string"
+    },
+    "implementation_text": {
+      "type": "string"
+    },
+    "write_strategy": {
+      "type": "string",
+      "enum": [
+        "replace"
+      ]
+    },
+    "verify_mode": {
+      "type": "string",
+      "enum": [
+        "exact",
+        "normalize_newlines"
+      ]
+    }
+  },
+  "additionalProperties": false
+}
+```
+
+## `edit_pou_transaction`
+
+- 代码：`POU-011`
+- 类别：`pous / 程序组织单元`
+- 功能：Open a project, edit one POU by applying a patch plan, verify, save, and close in a single IDE run.
+- 风险等级：`dangerous / 高风险`
+- 工作流：`现有工程编辑流`
+- 推荐前置工具：`open_project`
+- 备注：Applies operations in order. Verification includes a round-trip readback of any edited documents.
+
+输入字段：
+
+```json
+{
+  "type": "object",
+  "required": [
+    "project_path",
+    "container_path",
+    "pou_name",
+    "operations"
+  ],
+  "properties": {
+    "project_path": {
+      "type": "string"
+    },
+    "container_path": {
+      "type": "string"
+    },
+    "pou_name": {
+      "type": "string"
+    },
+    "operations": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "document_kind": {
+            "type": "string",
+            "enum": [
+              "declaration",
+              "implementation"
+            ]
+          },
+          "op": {
+            "type": "string",
+            "enum": [
+              "replace",
+              "append",
+              "insert",
+              "replace_line"
+            ]
+          },
+          "new_text": {
+            "type": "string"
+          },
+          "text": {
+            "type": "string"
+          },
+          "offset": {
+            "type": "integer"
+          },
+          "line_number": {
+            "type": "integer"
+          }
+        }
+      }
+    },
+    "verify_mode": {
+      "type": "string",
+      "enum": [
+        "exact",
+        "normalize_newlines"
+      ]
+    }
+  },
+  "additionalProperties": false
+}
+```

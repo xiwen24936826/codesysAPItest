@@ -31,6 +31,12 @@
   备注：Prefer can_browse over is_folder when recursing the returned tree.
 - `open_project`：Open an existing CODESYS project.（风险：`safe / 低风险`）
 - `save_project`：Save or save-as an existing CODESYS project.（风险：`caution / 需谨慎`）
+- `edit_pou_transaction`：Open a project, edit one POU by applying a patch plan, verify, save, and close in a single IDE run.（风险：`dangerous / 高风险`）
+  前置建议：`open_project`
+  备注：Applies operations in order. Verification includes a round-trip readback of any edited documents.
+- `generate_pou_transaction`：Open a project, create a POU, write declaration/implementation, save, and close in a single IDE run.（风险：`dangerous / 高风险`）
+  前置建议：`open_project`
+  备注：This tool always saves and closes the project when it succeeds. Prefer this tool over many small edits when IDE startup time dominates.
 
 ## 新建工程流
 
@@ -47,6 +53,9 @@
   备注：Prefer can_browse over is_folder when recursing the returned tree.
 - `open_project`：Open an existing CODESYS project.（风险：`safe / 低风险`）
 - `save_project`：Save or save-as an existing CODESYS project.（风险：`caution / 需谨慎`）
+- `generate_pou_transaction`：Open a project, create a POU, write declaration/implementation, save, and close in a single IDE run.（风险：`dangerous / 高风险`）
+  前置建议：`open_project`
+  备注：This tool always saves and closes the project when it succeeds. Prefer this tool over many small edits when IDE startup time dominates.
 - `add_controller_device`：Add a top-level controller device to a project.（风险：`dangerous / 高风险`）
   前置建议：`create_project`, `open_project`
   备注：Not part of the preferred existing-project POU editing flow.

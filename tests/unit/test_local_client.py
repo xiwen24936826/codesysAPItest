@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from pathlib import Path
 import sys
+import tempfile
 import unittest
 
 
@@ -86,22 +87,22 @@ class LocalClientTests(unittest.TestCase):
         backend = FakeBackend()
         client = LocalCodesysMcpClient(create_server_application(backend))
 
-        self.assertTrue(
-            client.create_project("D:/Projects/demo.project").ok
-        )
-        self.assertTrue(
-            client.open_project("D:/Projects/demo.project").ok
-        )
-        self.assertTrue(
-            client.save_project(
-                "D:/Projects/demo.project",
-                save_mode="save_as",
-                target_project_path="D:/Projects/demo_copy.project",
-            ).ok
-        )
+        with tempfile.TemporaryDirectory() as temp_dir:
+            project_path = str(Path(temp_dir) / "demo.project")
+            target_project_path = str(Path(temp_dir) / "demo_copy.project")
+
+            self.assertTrue(client.create_project(project_path).ok)
+            self.assertTrue(client.open_project(project_path).ok)
+            self.assertTrue(
+                client.save_project(
+                    project_path,
+                    save_mode="save_as",
+                    target_project_path=target_project_path,
+                ).ok
+            )
         self.assertTrue(
             client.add_controller_device(
-                project_path="D:/Projects/demo.project",
+                project_path=project_path,
                 device_name="Controller",
                 device_type=4102,
                 device_id="0000 0001",
@@ -110,14 +111,14 @@ class LocalClientTests(unittest.TestCase):
         )
         self.assertTrue(
             client.create_function_block(
-                project_path="D:/Projects/demo.project",
+                project_path=project_path,
                 container_path="Application",
                 name="MotorControl",
             ).ok
         )
         self.assertTrue(
             client.create_function(
-                project_path="D:/Projects/demo.project",
+                project_path=project_path,
                 container_path="Application",
                 name="ComputeSpeed",
                 return_type="INT",
@@ -125,7 +126,7 @@ class LocalClientTests(unittest.TestCase):
         )
         self.assertTrue(
             client.read_textual_declaration(
-                project_path="D:/Projects/demo.project",
+                project_path=project_path,
                 container_path="Application",
                 object_name="MotorControl",
             ).ok

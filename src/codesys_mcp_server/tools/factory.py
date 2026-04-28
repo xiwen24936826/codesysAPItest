@@ -9,6 +9,8 @@ from codesys_mcp_server.services.pous import (
     create_function,
     create_function_block,
     create_program,
+    edit_pou_transaction,
+    generate_pou_transaction,
     insert_text_document,
     read_textual_declaration,
     read_textual_implementation,
@@ -159,6 +161,22 @@ def _bind_replace_line(backend: Any) -> ToolHandler:
     )
 
 
+def _bind_generate_pou_transaction(backend: Any) -> ToolHandler:
+    return lambda request, request_id=None: generate_pou_transaction(
+        request=request,
+        pou_transaction_generator=backend,
+        request_id=request_id,
+    )
+
+
+def _bind_edit_pou_transaction(backend: Any) -> ToolHandler:
+    return lambda request, request_id=None: edit_pou_transaction(
+        request=request,
+        pou_transaction_editor=backend,
+        request_id=request_id,
+    )
+
+
 HANDLER_BUILDERS: dict[str, HandlerBuilder] = {
     "create_project": _bind_create_project,
     "open_project": _bind_open_project,
@@ -176,6 +194,8 @@ HANDLER_BUILDERS: dict[str, HandlerBuilder] = {
     "append_text_document": _bind_append_text_document,
     "insert_text_document": _bind_insert_text_document,
     "replace_line": _bind_replace_line,
+    "generate_pou_transaction": _bind_generate_pou_transaction,
+    "edit_pou_transaction": _bind_edit_pou_transaction,
 }
 
 
