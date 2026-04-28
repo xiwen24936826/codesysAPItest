@@ -6,6 +6,7 @@ EcoStruxure Motion Expert / CODESYS scripting.
 
 from __future__ import print_function
 
+import io
 import json
 import os
 import re
@@ -17,13 +18,33 @@ import scriptengine
 REQUEST_ENV = "CODESYS_BRIDGE_REQUEST"
 RESPONSE_ENV = "CODESYS_BRIDGE_RESPONSE"
 
+try:
+    _TEXT_TYPE = unicode  # type: ignore[name-defined]
+    _BINARY_TYPE = str
+except NameError:  # pragma: no cover
+    _TEXT_TYPE = str
+    _BINARY_TYPE = bytes
+
+
+def _to_text(value):
+    if value is None:
+        return _TEXT_TYPE("")
+    if isinstance(value, _TEXT_TYPE):
+        return value
+    if isinstance(value, _BINARY_TYPE):
+        try:
+            return value.decode("utf-8")
+        except Exception:
+            return value.decode("utf-8", "replace")
+    return _TEXT_TYPE(value)
+
 
 def _load_request():
     request_path = os.environ.get(REQUEST_ENV)
     if not request_path:
         raise RuntimeError("%s is not set" % REQUEST_ENV)
 
-    with open(request_path, "r") as handle:
+    with io.open(request_path, "r", encoding="utf-8") as handle:
         return json.load(handle)
 
 
@@ -32,8 +53,8 @@ def _write_response(payload):
     if not response_path:
         raise RuntimeError("%s is not set" % RESPONSE_ENV)
 
-    with open(response_path, "w") as handle:
-        json.dump(payload, handle)
+    with io.open(response_path, "w", encoding="utf-8") as handle:
+        json.dump(payload, handle, ensure_ascii=False)
 
 
 def _no_updates_flag():
@@ -42,7 +63,7 @@ def _no_updates_flag():
 
 def _open_project(request):
     return scriptengine.projects.open(
-        request["project_path"],
+        _to_text(request["project_path"]),
         primary=True,
         update_flags=_no_updates_flag(),
     )
@@ -57,7 +78,7 @@ def _get_object_name(obj):
 
 def _find_child(parent, name):
     for child in parent.get_children(False):
-        if _get_object_name(child) == name:
+        if _get_object_name(child) == _to_text(name):
             return child
     raise LookupError("Object '%s' could not be found." % name)
 
@@ -67,7 +88,7 @@ def _resolve_container(project, container_path):
     if container_path in (None, "", "/"):
         return container
     for part in [item for item in container_path.split("/") if item]:
-        container = _find_child(container, part)
+        container = _find_child(container, _to_text(part))
     return container
 
 
@@ -77,7 +98,7 @@ def _resolve_target_object(project, container_path, object_name):
 
 
 def _resolve_language(language_name):
-    normalized = (language_name or "ST").strip().upper()
+    normalized = (_to_text(language_name) or "ST").strip().upper()
     mapping = {
         "ST": scriptengine.ImplementationLanguages.st,
         "IL": scriptengine.ImplementationLanguages.instruction_list,
@@ -95,8 +116,8 @@ def _normalize_interfaces(interfaces):
     if interfaces is None:
         return None
     if isinstance(interfaces, list):
-        return ", ".join([item for item in interfaces if item])
-    return interfaces
+        return ", ".join([_to_text(item) for item in interfaces if item])
+    return _to_text(interfaces)
 
 
 def _get_text_document(target_object, document_kind):
@@ -409,7 +430,7 @@ def _handle_create(request):
 
 def _handle_open(request):
     project = scriptengine.projects.open(
-        request["project_path"],
+        _to_text(request["project_path"]),
         primary=request.get("primary", True),
         update_flags=_no_updates_flag(),
     )
@@ -434,7 +455,7 @@ def _handle_save(request):
 
 def _handle_save_as(request):
     project = _open_project(request)
-    project.save_as(request["target_project_path"])
+    project.save_as(_to_text(request["target_project_path"]))
     result = {
         "project_path": request["target_project_path"],
         "saved": True,
@@ -448,11 +469,11 @@ def _handle_add_controller_device(request):
 
     module = request.get("module")
     project.add(
-        request["device_name"],
+        _to_text(request["device_name"]),
         request["device_type"],
-        request["device_id"],
-        request["device_version"],
-        module,
+        _to_text(request["device_id"]),
+        _to_text(request["device_version"]),
+        _to_text(module) if module else None,
     )
     project.save()
 
@@ -473,7 +494,7 @@ def _handle_create_program(request):
     project = _open_project(request)
     container = _resolve_container(project, request["container_path"])
     created_object = container.create_pou(
-        name=request["name"],
+        name=_to_text(request["name"]),
         type=scriptengine.PouType.Program,
         language=_resolve_language(request.get("language")),
         return_type=None,
@@ -496,11 +517,11 @@ def _handle_create_function_block(request):
     project = _open_project(request)
     container = _resolve_container(project, request["container_path"])
     created_object = container.create_pou(
-        name=request["name"],
+        name=_to_text(request["name"]),
         type=scriptengine.PouType.FunctionBlock,
         language=_resolve_language(request.get("language")),
         return_type=None,
-        base_type=request.get("base_type"),
+        base_type=_to_text(request.get("base_type")) if request.get("base_type") else None,
         interfaces=_normalize_interfaces(request.get("interfaces")),
     )
     project.save()
@@ -521,10 +542,10 @@ def _handle_create_function(request):
     project = _open_project(request)
     container = _resolve_container(project, request["container_path"])
     created_object = container.create_pou(
-        name=request["name"],
+        name=_to_text(request["name"]),
         type=scriptengine.PouType.Function,
         language=_resolve_language(request.get("language")),
-        return_type=request["return_type"],
+        return_type=_to_text(request["return_type"]),
         base_type=None,
         interfaces=None,
     )
@@ -568,7 +589,7 @@ def _handle_replace_text_document(request):
         request["object_name"],
     )
     document = _get_text_document(target_object, request["document_kind"])
-    document.replace(new_text=request["new_text"])
+    document.replace(new_text=_to_text(request["new_text"]))
     project.save()
     result = {
         "project_path": project.path,
@@ -588,7 +609,7 @@ def _handle_append_text_document(request):
         request["object_name"],
     )
     document = _get_text_document(target_object, request["document_kind"])
-    document.append(request["text_to_append"])
+    document.append(_to_text(request["text_to_append"]))
     project.save()
     result = {
         "project_path": project.path,
@@ -609,7 +630,7 @@ def _handle_insert_text_document(request):
     )
     document = _get_text_document(target_object, request["document_kind"])
     document.insert(
-        text=request["text_to_insert"],
+        text=_to_text(request["text_to_insert"]),
         offset=request["insertion_offset"],
     )
     project.save()
@@ -634,7 +655,7 @@ def _handle_replace_text_line(request):
     document = _get_text_document(target_object, request["document_kind"])
     document.replace_line(
         request["line_number"],
-        request["new_text"],
+        _to_text(request["new_text"]),
     )
     project.save()
     result = {
@@ -761,13 +782,13 @@ def _handle_generate_pou_transaction(request):
     base_type = None
     interfaces = None
     if pou_kind == "function":
-        return_type = request.get("return_type")
+        return_type = _to_text(request.get("return_type")) if request.get("return_type") else None
     elif pou_kind == "function_block":
-        base_type = request.get("base_type")
+        base_type = _to_text(request.get("base_type")) if request.get("base_type") else None
         interfaces = _normalize_interfaces(request.get("interfaces"))
 
     created_object = container.create_pou(
-        name=request["pou_name"],
+        name=_to_text(request["pou_name"]),
         type=pou_type_mapping[pou_kind],
         language=_resolve_language(request.get("language")),
         return_type=return_type,
@@ -775,8 +796,8 @@ def _handle_generate_pou_transaction(request):
         interfaces=interfaces,
     )
 
-    declaration_text = request.get("declaration_text", "")
-    implementation_text = request.get("implementation_text", "")
+    declaration_text = _to_text(request.get("declaration_text", ""))
+    implementation_text = _to_text(request.get("implementation_text", ""))
 
     declaration_document = _get_text_document(created_object, "declaration")
     implementation_document = _get_text_document(created_object, "implementation")
@@ -844,19 +865,19 @@ def _apply_text_operations(current_text, operations):
     for operation in operations:
         op = operation.get("op")
         if op == "replace":
-            expected = operation.get("new_text", "")
+            expected = _to_text(operation.get("new_text", ""))
             continue
         if op == "append":
-            expected = expected + operation.get("text", "")
+            expected = expected + _to_text(operation.get("text", ""))
             continue
         if op == "insert":
-            text = operation.get("text", "")
+            text = _to_text(operation.get("text", ""))
             offset = int(operation.get("offset", 0))
             expected = expected[:offset] + text + expected[offset:]
             continue
         if op == "replace_line":
             line_number = int(operation.get("line_number", 0))
-            new_text = operation.get("new_text", "")
+            new_text = _to_text(operation.get("new_text", ""))
             lines = expected.splitlines(True)
             if line_number < 1 or line_number > len(lines):
                 raise ValueError("line_number is outside the document line range.")
@@ -879,7 +900,7 @@ def _handle_edit_pou_transaction(request):
     verify_mode = request.get("verify_mode") or "normalize_newlines"
     requested_container_path = request.get("container_path")
     container, resolved_container_path = _resolve_container_with_fallback(project, requested_container_path)
-    target_object = _find_child(container, request["pou_name"])
+    target_object = _find_child(container, _to_text(request["pou_name"]))
 
     operations = request.get("operations") or []
     operations_by_kind = {"declaration": [], "implementation": []}
@@ -901,13 +922,19 @@ def _handle_edit_pou_transaction(request):
     for operation in operations_by_kind["declaration"]:
         op = operation.get("op")
         if op == "replace":
-            declaration_document.replace(new_text=operation.get("new_text", ""))
+            declaration_document.replace(new_text=_to_text(operation.get("new_text", "")))
         elif op == "append":
-            declaration_document.append(operation.get("text", ""))
+            declaration_document.append(_to_text(operation.get("text", "")))
         elif op == "insert":
-            declaration_document.insert(text=operation.get("text", ""), offset=int(operation.get("offset", 0)))
+            declaration_document.insert(
+                text=_to_text(operation.get("text", "")),
+                offset=int(operation.get("offset", 0)),
+            )
         elif op == "replace_line":
-            declaration_document.replace_line(int(operation.get("line_number", 0)), operation.get("new_text", ""))
+            declaration_document.replace_line(
+                int(operation.get("line_number", 0)),
+                _to_text(operation.get("new_text", "")),
+            )
         else:
             project.close()
             raise LookupError("Unsupported operation: %s" % op)
@@ -915,13 +942,19 @@ def _handle_edit_pou_transaction(request):
     for operation in operations_by_kind["implementation"]:
         op = operation.get("op")
         if op == "replace":
-            implementation_document.replace(new_text=operation.get("new_text", ""))
+            implementation_document.replace(new_text=_to_text(operation.get("new_text", "")))
         elif op == "append":
-            implementation_document.append(operation.get("text", ""))
+            implementation_document.append(_to_text(operation.get("text", "")))
         elif op == "insert":
-            implementation_document.insert(text=operation.get("text", ""), offset=int(operation.get("offset", 0)))
+            implementation_document.insert(
+                text=_to_text(operation.get("text", "")),
+                offset=int(operation.get("offset", 0)),
+            )
         elif op == "replace_line":
-            implementation_document.replace_line(int(operation.get("line_number", 0)), operation.get("new_text", ""))
+            implementation_document.replace_line(
+                int(operation.get("line_number", 0)),
+                _to_text(operation.get("new_text", "")),
+            )
         else:
             project.close()
             raise LookupError("Unsupported operation: %s" % op)

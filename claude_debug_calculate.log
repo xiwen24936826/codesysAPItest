@@ -907,3 +907,70 @@
 2026-04-28T05:16:05.362Z [ERROR] [3P telemetry] OTEL diag error: {"message":"Failed to export 12 events (status=403, code=ERR_BAD_REQUEST, Request failed with status code 403)","originalLine":"446","originalColumn":"1668","line":"446","column":"1668","sourceURL":"B:/~BUN/root/src/entrypoints/cli.js","stack":"Error: Failed to export 12 events (status=403, code=ERR_BAD_REQUEST, Request failed with status code 403)\n    at doExport (B:/~BUN/root/src/entrypoints/cli.js:446:1668)\n    at processTicksAndRejections (native:7:39)","name":"Error"}
 2026-04-28T05:16:05.439Z [INFO] [Stall] tool_dispatch_start tool=mcp__codesys-sp20__generate_pou_transaction toolUseId=call_00_OykozPnxwG0euWIksH8IUtzh permissionDecisionMs=0
 2026-04-28T05:16:05.440Z [DEBUG] MCP server "codesys-sp20": Calling MCP tool: generate_pou_transaction
+2026-04-28T05:16:15.659Z [ERROR] 1P event logging: 5 events failed to export (status=403, code=ERR_BAD_REQUEST, Request failed with status code 403)
+2026-04-28T05:16:15.660Z [ERROR] [3P telemetry] OTEL diag error: {"message":"Failed to export 5 events (status=403, code=ERR_BAD_REQUEST, Request failed with status code 403)","originalLine":"446","originalColumn":"1668","line":"446","column":"1668","sourceURL":"B:/~BUN/root/src/entrypoints/cli.js","stack":"Error: Failed to export 5 events (status=403, code=ERR_BAD_REQUEST, Request failed with status code 403)\n    at doExport (B:/~BUN/root/src/entrypoints/cli.js:446:1668)\n    at processTicksAndRejections (native:7:39)","name":"Error"}
+2026-04-28T05:16:21.766Z [DEBUG] MCP server "codesys-sp20": Tool 'generate_pou_transaction' completed successfully in 16s
+2026-04-28T05:16:21.767Z [INFO] [Stall] tool_dispatch_end tool=mcp__codesys-sp20__generate_pou_transaction toolUseId=call_00_OykozPnxwG0euWIksH8IUtzh outcome=ok durationMs=16328
+2026-04-28T05:16:21.770Z [DEBUG] LSP Diagnostics: getLSPDiagnosticAttachments called
+2026-04-28T05:16:21.770Z [DEBUG] LSP Diagnostics: Checking registry - 0 pending
+2026-04-28T05:16:21.770Z [DEBUG] Hooks: Found 0 total hooks in registry
+2026-04-28T05:16:21.770Z [DEBUG] Hooks: checkForNewResponses returning 0 responses
+2026-04-28T05:16:21.772Z [DEBUG] autocompact: tokens=31014 threshold=167000 effectiveWindow=180000
+2026-04-28T05:16:21.772Z [DEBUG] Tool search disabled: ToolSearchTool is not available (may have been disallowed via disallowedTools).
+2026-04-28T05:16:21.773Z [DEBUG] attribution header x-anthropic-billing-header: cc_version=2.1.118.52a; cc_entrypoint=sdk-cli; cch=00000;
+2026-04-28T05:16:21.773Z [DEBUG] Fast mode unavailable: Fast mode is not available in the Agent SDK
+2026-04-28T05:16:21.774Z [DEBUG] Fast mode unavailable: Fast mode is not available in the Agent SDK
+2026-04-28T05:16:21.774Z [DEBUG] [API:request] Creating client, ANTHROPIC_CUSTOM_HEADERS present: false, has Authorization header: false
+2026-04-28T05:16:21.774Z [DEBUG] [API:auth] OAuth token check starting
+2026-04-28T05:16:21.775Z [DEBUG] [API:auth] OAuth token check complete
+2026-04-28T05:16:21.775Z [DEBUG] Fast mode unavailable: Fast mode is not available in the Agent SDK
+2026-04-28T05:16:21.776Z [DEBUG] [API REQUEST] /anthropic/v1/messages source=sdk
+2026-04-28T05:16:22.460Z [DEBUG] Stream started - received first chunk
+2026-04-28T05:16:25.910Z [INFO] [Stall] tool_dispatch_start tool=mcp__codesys-sp20__read_textual_declaration toolUseId=call_00_oNeFUYQSEc8ZkFf8tCeKfLGE permissionDecisionMs=0
+2026-04-28T05:16:25.911Z [DEBUG] MCP server "codesys-sp20": Calling MCP tool: read_textual_declaration
+2026-04-28T05:16:31.774Z [ERROR] [3P telemetry] OTEL diag error: {"message":"Dropped 16 events: max attempts (8) reached","originalLine":"446","originalColumn":"1333","line":"446","column":"1333","sourceURL":"B:/~BUN/root/src/entrypoints/cli.js","stack":"Error: Dropped 16 events: max attempts (8) reached\n    at doExport (B:/~BUN/root/src/entrypoints/cli.js:446:1333)\n    at export (B:/~BUN/root/src/entrypoints/cli.js:446:842)\n    at <anonymous> (B:/~BUN/root/src/entrypoints/cli.js:441:111057)\n    at <anonymous> (B:/~BUN/root/src/entrypoints/cli.js:441:110997)\n    at new Promise (native:1:11)\n    at nl4 (B:/~BUN/root/src/entrypoints/cli.js:441:110974)\n    at $ (B:/~BUN/root/src/entrypoints/cli.js:442:19012)\n    at <anonymous> (B:/~BUN/root/src/entrypoints/cli.js:442:18285)\n    at new Promise (native:1:11)\n    at _flushOneBatch (B:/~BUN/root/src/entrypoints/cli.js:442:18245)","name":"Error"}
+2026-04-28T05:16:40.231Z [DEBUG] MCP server "codesys-sp20": STDIO connection closed after 131s (cleanly)
+2026-04-28T05:16:40.232Z [DEBUG] MCP server "codesys-sp20": Cleared connection cache for reconnection
+2026-04-28T05:16:40.232Z [DEBUG] MCP server "codesys-sp20": Tool 'read_textual_declaration' failed after 14s: MCP error -32000: Connection closed
+2026-04-28T05:16:40.234Z [WARN] [Stall] tool_dispatch_end tool=mcp__codesys-sp20__read_textual_declaration toolUseId=call_00_oNeFUYQSEc8ZkFf8tCeKfLGE outcome=error durationMs=14324
+2026-04-28T05:16:40.234Z [DEBUG] mcp__codesys-sp20__read_textual_declaration tool error (14324ms): MCP error -32000: Connection closed
+2026-04-28T05:16:40.234Z [ERROR] "McpError: McpError: MCP error -32000: Connection closed\n    at fromError (B:/~BUN/root/src/entrypoints/cli.js:93:42770)\n    at _onclose (B:/~BUN/root/src/entrypoints/cli.js:93:49222)\n    at <anonymous> (B:/~BUN/root/src/entrypoints/cli.js:93:48438)\n    at <anonymous> (B:/~BUN/root/src/entrypoints/cli.js:855:29109)\n    at emit (node:events:98:22)\n    at <anonymous> (B:/~BUN/root/src/entrypoints/cli.js:139:7837)\n    at #maybeClose (node:child_process:778:16)\n    at #handleOnExit (node:child_process:532:72)\n    at processTicksAndRejections (native:7:39)"
+2026-04-28T05:16:40.240Z [INFO] [Stall] tool_dispatch_start tool=mcp__codesys-sp20__read_textual_implementation toolUseId=call_01_rq45Af7uUuYaGziDgKXcl7RX permissionDecisionMs=1
+2026-04-28T05:16:40.242Z [DEBUG] MCP server "codesys-sp20": Starting connection with timeout of 30000ms
+2026-04-28T05:16:40.471Z [DEBUG] MCP server "codesys-sp20": Successfully connected (transport: stdio) in 231ms
+2026-04-28T05:16:40.471Z [DEBUG] MCP server "codesys-sp20": Connection established with capabilities: {"hasTools":true,"hasPrompts":false,"hasResources":false,"hasResourceSubscribe":false,"serverVersion":{"name":"codesys-mcp-local","title":"CODESYS MCP Local Server","version":"0.1.0"}}
+2026-04-28T05:16:40.472Z [DEBUG] [MCP] Server "codesys-sp20" connected with subscribe=false
+2026-04-28T05:16:40.472Z [DEBUG] MCP server "codesys-sp20": Calling MCP tool: read_textual_implementation
+2026-04-28T05:16:50.443Z [ERROR] 1P event logging: 5 events failed to export (status=403, code=ERR_BAD_REQUEST, Request failed with status code 403)
+2026-04-28T05:16:50.444Z [ERROR] [3P telemetry] OTEL diag error: {"message":"Failed to export 5 events (status=403, code=ERR_BAD_REQUEST, Request failed with status code 403)","originalLine":"446","originalColumn":"1668","line":"446","column":"1668","sourceURL":"B:/~BUN/root/src/entrypoints/cli.js","stack":"Error: Failed to export 5 events (status=403, code=ERR_BAD_REQUEST, Request failed with status code 403)\n    at doExport (B:/~BUN/root/src/entrypoints/cli.js:446:1668)\n    at processTicksAndRejections (native:7:39)","name":"Error"}
+2026-04-28T05:16:54.800Z [DEBUG] MCP server "codesys-sp20": STDIO connection closed after 14s (cleanly)
+2026-04-28T05:16:54.801Z [DEBUG] MCP server "codesys-sp20": Cleared connection cache for reconnection
+2026-04-28T05:16:54.801Z [DEBUG] MCP server "codesys-sp20": Tool 'read_textual_implementation' failed after 14s: MCP error -32000: Connection closed
+2026-04-28T05:16:54.801Z [WARN] [Stall] tool_dispatch_end tool=mcp__codesys-sp20__read_textual_implementation toolUseId=call_01_rq45Af7uUuYaGziDgKXcl7RX outcome=error durationMs=14561
+2026-04-28T05:16:54.801Z [DEBUG] mcp__codesys-sp20__read_textual_implementation tool error (14561ms): MCP error -32000: Connection closed
+2026-04-28T05:16:54.801Z [ERROR] "McpError: McpError: MCP error -32000: Connection closed\n    at fromError (B:/~BUN/root/src/entrypoints/cli.js:93:42770)\n    at _onclose (B:/~BUN/root/src/entrypoints/cli.js:93:49222)\n    at <anonymous> (B:/~BUN/root/src/entrypoints/cli.js:93:48438)\n    at <anonymous> (B:/~BUN/root/src/entrypoints/cli.js:855:29109)\n    at emit (node:events:98:22)\n    at <anonymous> (B:/~BUN/root/src/entrypoints/cli.js:139:7837)\n    at #maybeClose (node:child_process:778:16)\n    at #handleOnExit (node:child_process:532:72)\n    at processTicksAndRejections (native:7:39)"
+2026-04-28T05:16:54.805Z [DEBUG] LSP Diagnostics: getLSPDiagnosticAttachments called
+2026-04-28T05:16:54.805Z [DEBUG] LSP Diagnostics: Checking registry - 0 pending
+2026-04-28T05:16:54.805Z [DEBUG] Hooks: Found 0 total hooks in registry
+2026-04-28T05:16:54.805Z [DEBUG] Hooks: checkForNewResponses returning 0 responses
+2026-04-28T05:16:54.807Z [DEBUG] autocompact: tokens=31277 threshold=167000 effectiveWindow=180000
+2026-04-28T05:16:54.807Z [DEBUG] Tool search disabled: ToolSearchTool is not available (may have been disallowed via disallowedTools).
+2026-04-28T05:16:54.808Z [DEBUG] attribution header x-anthropic-billing-header: cc_version=2.1.118.52a; cc_entrypoint=sdk-cli; cch=00000;
+2026-04-28T05:16:54.808Z [DEBUG] Fast mode unavailable: Fast mode is not available in the Agent SDK
+2026-04-28T05:16:54.809Z [DEBUG] Fast mode unavailable: Fast mode is not available in the Agent SDK
+2026-04-28T05:16:54.809Z [DEBUG] [API:request] Creating client, ANTHROPIC_CUSTOM_HEADERS present: false, has Authorization header: false
+2026-04-28T05:16:54.809Z [DEBUG] [API:auth] OAuth token check starting
+2026-04-28T05:16:54.809Z [DEBUG] [API:auth] OAuth token check complete
+2026-04-28T05:16:54.810Z [DEBUG] Fast mode unavailable: Fast mode is not available in the Agent SDK
+2026-04-28T05:16:54.811Z [DEBUG] [API REQUEST] /anthropic/v1/messages source=sdk
+2026-04-28T05:16:55.392Z [DEBUG] Stream started - received first chunk
+2026-04-28T05:17:00.649Z [DEBUG] Fast mode unavailable: Fast mode is not available in the Agent SDK
+2026-04-28T05:17:00.652Z [DEBUG] LSP server manager shut down successfully
+2026-04-28T05:17:00.653Z [DEBUG] Metrics export disabled by organization setting
+2026-04-28T05:17:00.653Z [DEBUG] Failed to check metrics opt-out status: Auth error: No API key available
+2026-04-28T05:17:00.653Z [ERROR] "Error: Error: Auth error: No API key available\n    at dpf (B:/~BUN/root/src/entrypoints/cli.js:2750:34205)\n    at async hc (B:/~BUN/root/src/entrypoints/cli.js:441:4989)\n    at async Qpf (B:/~BUN/root/src/entrypoints/cli.js:2750:34474)\n    at async <anonymous> (B:/~BUN/root/src/entrypoints/cli.js:130:18627)\n    at async ylK (B:/~BUN/root/src/entrypoints/cli.js:2750:34765)\n    at processTicksAndRejections (native:7:39)"
+2026-04-28T05:17:00.653Z [DEBUG] BigQuery metrics exporter flush complete
+2026-04-28T05:17:00.653Z [DEBUG] BigQuery metrics exporter flush complete
+2026-04-28T05:17:00.653Z [DEBUG] BigQuery metrics exporter shutdown complete
+2026-04-28T05:17:00.851Z [ERROR] 1P event logging: 20 events failed to export (status=403, code=ERR_BAD_REQUEST, Request failed with status code 403)
+2026-04-28T05:17:00.852Z [ERROR] [3P telemetry] OTEL diag error: {"message":"Failed to export 20 events (status=403, code=ERR_BAD_REQUEST, Request failed with status code 403)","originalLine":"446","originalColumn":"1668","line":"446","column":"1668","sourceURL":"B:/~BUN/root/src/entrypoints/cli.js","stack":"Error: Failed to export 20 events (status=403, code=ERR_BAD_REQUEST, Request failed with status code 403)\n    at doExport (B:/~BUN/root/src/entrypoints/cli.js:446:1668)\n    at processTicksAndRejections (native:7:39)","name":"Error"}

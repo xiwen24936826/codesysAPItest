@@ -86,7 +86,7 @@ class CodesysIdeRunner:
         )
 
         try:
-            json.dump(normalized_payload, request_file)
+            json.dump(normalized_payload, request_file, ensure_ascii=False)
             request_file.close()
             response_file.close()
 
