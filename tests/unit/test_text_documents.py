@@ -259,8 +259,27 @@ class CorruptingTextDocumentWriter(FakeTextDocumentWriter):
             self.implementation = self.implementation + " "
 
 
+class NewlineNormalizingTextDocumentWriter(FakeTextDocumentWriter):
+    def replace_text_document(
+        self,
+        project_path: str,
+        container_path: str,
+        object_name: str,
+        document_kind: str,
+        new_text: str,
+    ) -> None:
+        normalized = new_text.replace("\n", "\r\n")
+        super().replace_text_document(
+            project_path=project_path,
+            container_path=container_path,
+            object_name=object_name,
+            document_kind=document_kind,
+            new_text=normalized,
+        )
+
+
+
 class TextDocumentServiceTests(unittest.TestCase):
-    """Behavioral tests for textual document MCP services."""
 
     def test_read_textual_declaration_returns_text(self) -> None:
         reader = FakeTextDocumentReader()
@@ -477,6 +496,24 @@ class TextDocumentServiceTests(unittest.TestCase):
 
         self.assertFalse(response["ok"])
         self.assertEqual(response["error"]["code"], "TEXT_ROUNDTRIP_VERIFICATION_FAILED")
+
+    def test_replace_text_document_accepts_newline_normalization_on_roundtrip(self) -> None:
+        writer = NewlineNormalizingTextDocumentWriter()
+
+        response = replace_text_document(
+            request={
+                "project_path": "D:/Projects/demo.project",
+                "container_path": "Application",
+                "object_name": "MainProgram",
+                "document_kind": "implementation",
+                "new_text": "Counter := Counter + 2;\nCounter := Counter + 3;\n",
+            },
+            text_document_replacer=writer,
+            request_id="req-text-008b",
+        )
+
+        self.assertTrue(response["ok"])
+        self.assertTrue(response["data"]["roundtrip_verified"])
 
     def test_replace_text_document_rejects_undeclared_identifiers(self) -> None:
         writer = FakeTextDocumentWriter()

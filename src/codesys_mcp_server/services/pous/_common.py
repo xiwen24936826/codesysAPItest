@@ -264,6 +264,14 @@ def verify_roundtrip_text(
         object_name=object_name,
         document_kind=document_kind,
     )
+    if actual_text == expected_text:
+        return actual_text
+
+    normalized_expected = _normalize_st_newlines(expected_text)
+    normalized_actual = _normalize_st_newlines(actual_text)
+    if normalized_actual == normalized_expected:
+        return actual_text
+
     if actual_text != expected_text:
         raise_validation_error(
             error_cls=error_cls,
@@ -273,10 +281,19 @@ def verify_roundtrip_text(
                 "expected_length": len(expected_text),
                 "actual_length": len(actual_text),
                 "mismatch_index": _first_mismatch_index(expected_text, actual_text),
+                "expected_length_normalized": len(normalized_expected),
+                "actual_length_normalized": len(normalized_actual),
+                "mismatch_index_normalized": _first_mismatch_index(
+                    normalized_expected, normalized_actual
+                ),
             },
             code="TEXT_ROUNDTRIP_VERIFICATION_FAILED",
         )
     return actual_text
+
+
+def _normalize_st_newlines(text: str) -> str:
+    return text.replace("\r\n", "\n").replace("\r", "\n")
 
 
 def execute_text_write_flow(
